@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 class ConvBatchNormReluBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
@@ -46,6 +45,7 @@ class MultiConvBatchNormReluBlock(nn.Module):
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride):
         super().__init__()
+        self.relu = nn.ReLU()
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(out_channels),
@@ -64,7 +64,7 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         out = self.layers(x)
         out += self.shortcut(x)
-        return F.relu(out)
+        return self.relu(out)
 
 
 class UpsampleConvBlock(nn.Module):
