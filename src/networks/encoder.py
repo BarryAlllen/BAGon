@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from src.networks.attention import ConvolutionalBlockAttentionModule
 from src.networks.common import DoubleConvBatchNormReluBlock, DownsampleMaxPoolBlock, UpsampleConvBlock
 
 
@@ -22,6 +23,10 @@ class Encoder(nn.Module):
         self.up_sample_2 = UpsampleConvBlock(in_channels=64, out_channels=32)
         self.up_sample_3 = UpsampleConvBlock(in_channels=32, out_channels=16)
 
+        self.attention_1 = ConvolutionalBlockAttentionModule(64)
+        self.attention_2 = ConvolutionalBlockAttentionModule(32)
+        self.attention_3 = ConvolutionalBlockAttentionModule(16)
+
         self.linear_message = nn.Linear(in_features=30, out_features=256)
         self.conv_message = DoubleConvBatchNormReluBlock(in_channels=1, out_channels=64)
 
@@ -29,10 +34,11 @@ class Encoder(nn.Module):
 
         self.interpolate = nn.functional.interpolate
 
-    def message_process(self, message, height, width, view_size, is_interpolate=True, mode='bilinear'):
+    def message_process(self, message, view_size=16, is_interpolate=True, height=None, width=None, mode='bilinear'):
         message = self.linear_message(message)
         message = message.view(-1, 1, view_size, view_size)
         if is_interpolate:
+            assert height is not None and width is not None, "Wrong input for height and width"
             message = self.interpolate(message, size=(height, width), mode=mode)
         message = self.conv_message(message)
         return message
@@ -51,4 +57,26 @@ class Encoder(nn.Module):
         x5 = self.down_sample_4x4(x4)
         x6 = x5.repeat(1, 1, 4, 4)
 
-        return x
+        message_1 = self.message_process(message=message,  is_interpolate=False)
+        x4 = torch.cat(tensors=(x4, x6, message_1), dim=1)
+
+        x44 = self.up_sample_1(x4)
+        x44 = self.attention_1(x44)
+        message_2 = self.message_process(message=message, height=x44.shape[2], width=x44.shape[3])
+        x44 = torch.cat(tensors=(x3, x44, message_2), dim=1)
+        x44 = self.conv_block_4(x44)
+
+        x33 = self.up_sample_2(x44)
+        x33 = self.attention_2(x33)
+        message_3 = self.message_process(message=message, height=x33.shape[2], width=x33.shape[3])
+        x33 = torch.cat(tensors=(x2, x33, message_3), dim=1)
+        x33 = self.conv_block_5(x33)
+
+        x22 = self.up_sample_3(x33)
+        x22 = self.attention_3(x22)
+        message_4 = self.message_process(message=message, height=x22.shape[2], width=x22.shape[3])
+        x22 = torch.cat(tensors=(x1, x22, message_4), dim=1)
+        x22 = self.conv_block_6(x22)
+
+        out = self.channel_adjust(x22)
+        return out
