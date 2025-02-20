@@ -4,11 +4,11 @@ import cv2
 import numpy as np
 
 from typing import Optional
-from torch.utils import data
+from torch.utils.data import Dataset
 from torchvision import transforms
 
 
-class DataLoader(data.Dataset):
+class TrainDataset(Dataset):
     def __init__(self, directory: str, image_size: int, transform: Optional[transforms.Compose] = None):
         super().__init__()
         self.directory = directory
