@@ -74,17 +74,18 @@ class TestDataset(Dataset):
         if self.transform is not None:
             image = self.transform(image)
 
+        image_test = image[:, :, :]
+
+        image_test = cv2.resize(image_test, (size, size))
+        image_test = image_test.transpose((2, 0, 1))
+        image_test = np.float32(image_test / 255.0 * 2 - 1)
+
         filename = self.paths[index]
         order_num = filename.split('.')[0]
         order_num = int(order_num)
+        message_test = self.message_matrix[order_num, :]
 
-        image = cv2.resize(image, (size, size))
-        image = image.transpose((2, 0, 1))
-        image = np.float32(image / 255.0 * 2 - 1)
-
-        message = self.message_matrix[order_num, :]
-
-        return image, message
+        return image_test, message_test
 
 
 
