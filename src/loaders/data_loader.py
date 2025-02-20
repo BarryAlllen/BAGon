@@ -44,5 +44,21 @@ def create_dataloaders(
 
     return train_dataloader, test_dataloader
 
+# dataloader,_ = create_dataloaders(
+#         train_dir="../../data/train",
+#         test_dir="../../data/test",
+#         image_size=128,
+#         batch_size=8,
+#         num_workers=1,
+#         message_matrix_path="../utils/test_matrix.npy"
+# )
+#
+# for batch, (a,b,c,d) in enumerate(dataloader):
+#     print(batch)
+#     print(a)
+#     print(b)
+#     print(c)
+#     print(d)
+
 
 
