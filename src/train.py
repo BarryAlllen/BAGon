@@ -134,7 +134,6 @@ class Trainer:
                 # train encoder(generator)
                 discriminator_generator_output = self.discriminator(image_encoded)
                 generator_loss = self.bce_loss(discriminator_generator_output, generator_target_labels)
-                generator_loss.backward()
 
                 message_loss = self.mse_loss(message_decoded, message)
 
@@ -188,8 +187,8 @@ class Trainer:
             # self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask)
             with torch.inference_mode():
                 for batch, (image_test, message_test) in enumerate(self.test_dataloader):
-                    image_test = tensor(image_test, device=self.device)
-                    message_test = tensor(message_test, dtype=torch.float, device=self.device)
+                    image_test = image_test.to(self.device)
+                    message_test = message_test.to(dtype=torch.float).to(self.device)
 
                     image_encoded_test, _, message_decoded_test = self.bagon_net(image_test, message_test)
 
