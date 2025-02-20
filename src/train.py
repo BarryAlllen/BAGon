@@ -1,15 +1,16 @@
-import math
-from datetime import datetime
 
 import cv2
+import math
 import numpy as np
 import torch
 import torch.nn as nn
 
-from torch import optim, tensor
+from tqdm import tqdm
+from datetime import datetime
+
+from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
 from src.networks.discriminator import Discriminator
 from src.networks.model import BAGon
@@ -193,7 +194,7 @@ class Trainer:
                     image_encoded_test, _, message_decoded_test = self.bagon_net(image_test, message_test)
 
                     message_decoded_test = torch.round(message_decoded_test).int()
-                    wrong_correct_bit += torch.sum(torch.abs(message_decoded_test - message_test)).item()  # .item()返回python标量
+                    wrong_correct_bit += torch.sum(torch.abs(message_decoded_test - message_test)).item()
                     correct_bit_total += image_test.shape[0] * message_test.shape[1]
 
             test_correct = (1 - wrong_correct_bit / wrong_correct_bit) * 100.0
