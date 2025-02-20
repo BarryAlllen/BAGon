@@ -13,8 +13,8 @@ class TrainDataset(Dataset):
         super().__init__()
         self.directory = directory
         self.paths = os.listdir(directory)
-        self.transform = transform
         self.image_size = image_size
+        self.transform = transform
 
     def load_image(self, index: int):
         image_path = self.paths[index]
@@ -48,3 +48,48 @@ class TrainDataset(Dataset):
         message[message < 0.5] = 0
 
         return image_origin, edge_mask, depth_mask, message
+
+
+class TestDataset(Dataset):
+    def __init__(self, directory: str, image_size: int, message_matrix_path: str, transform: Optional[transforms.Compose] = None):
+        super().__init__()
+        self.directory = directory
+        self.paths = os.listdir(directory)
+        self.image_size = image_size
+        self.message_matrix = np.load(message_matrix_path)
+        self.transform = transform
+
+    def load_image(self, index: int):
+        image_path = self.paths[index]
+        image = cv2.imread(os.path.join(self.directory, image_path), 1)
+        return image
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        size = self.image_size
+        image = self.load_image(index=index)
+
+        if self.transform is not None:
+            image = self.transform(image)
+
+        filename = self.paths[index]
+        order_num = filename.split('.')[0]
+        order_num = int(order_num)
+
+        image = cv2.resize(image, (size, size))
+        image = image.transpose((2, 0, 1))
+        image = np.float32(image / 255.0 * 2 - 1)
+
+        message = self.message_matrix[order_num, :]
+
+        return image, message
+
+
+
+
+
+
+
+
