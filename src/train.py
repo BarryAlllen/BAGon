@@ -35,7 +35,7 @@ class Trainer:
         self.is_parallel = is_parallel
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.train_dataloader = train_dataloader,
+        self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
 
         self.is_scheduler = is_scheduler
