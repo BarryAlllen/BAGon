@@ -1,5 +1,4 @@
 import math
-import os
 from datetime import datetime
 
 import cv2
@@ -7,13 +6,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from torch import optim, tensor, dtype
+from torch import optim, tensor
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.networks.discriminator import Discriminator
-from src.networks.model import BAGon
+from networks.discriminator import Discriminator
+from networks.model import BAGon
 
 
 class Trainer:
@@ -75,7 +74,7 @@ class Trainer:
         self.bce_loss = nn.BCEWithLogitsLoss()
         self.mse_loss = nn.MSELoss()
 
-    def train(self, epochs):
+    def train(self):
 
         train_loss = 0.0
         decoder_loss = 0.0
@@ -162,7 +161,7 @@ class Trainer:
                 discriminator_fake_loss_show += discriminator_fake_loss.item()
 
                 if (batch + 1) % self.print_for_batch == 0:
-                    print(f"Epoch [{epoch + 1}/{epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
+                    print(f"Epoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
                           f"Loss: {loss_show / self.print_for_batch}, "
                           f"Message Loss: {message_loss_show / self.print_for_batch}, "
                           f"Mask Loss: {mask_loss_show / self.print_for_batch}, "

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from src.networks.attention import ConvolutionalBlockAttentionModule
-from src.networks.common import DoubleConvBatchNormReluBlock, DownsampleMaxPoolBlock, UpsampleConvBlock
+from networks.attention import ConvolutionalBlockAttentionModule
+from networks.common import DoubleConvBatchNormReluBlock, DownsampleMaxPoolBlock, UpsampleConvBlock
 
 
 class Encoder(nn.Module):

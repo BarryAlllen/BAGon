@@ -1,7 +1,7 @@
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from src.loaders.dataset_custom import TrainDataset, TestDataset
+from loaders.dataset_custom import TrainDataset, TestDataset
 
 
 def create_dataloaders(

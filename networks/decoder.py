@@ -1,7 +1,7 @@
 import torch.nn as nn
 
-from src.networks.attention import ConvolutionalBlockAttentionModule
-from src.networks.common import ConvBatchNormReluBlock, ResidualBlock
+from networks.attention import ConvolutionalBlockAttentionModule
+from networks.common import ConvBatchNormReluBlock, ResidualBlock
 
 
 class Decoder(nn.Module):

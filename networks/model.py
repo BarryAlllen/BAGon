@@ -1,9 +1,9 @@
 
 import torch.nn as nn
 
-from src.networks.decoder import Decoder
-from src.networks.encoder import Encoder
-from src.networks.noise_layers import ScreenShootingNoiseLayer, NoneNoiseLayer
+from networks.decoder import Decoder
+from networks.encoder import Encoder
+from networks.noise_layers import ScreenShootingNoiseLayer, NoneNoiseLayer
 
 
 class BAGon(nn.Module):
