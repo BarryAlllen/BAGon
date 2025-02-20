@@ -1,14 +1,16 @@
 import torch.nn as nn
 
 class ConvBatchNormReluBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels=in_channels,
                       out_channels=out_channels,
                       kernel_size=kernel_size,
                       stride=stride,
-                      padding=padding),
+                      padding=padding,
+                      bias=bias
+                      ),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -18,11 +20,11 @@ class ConvBatchNormReluBlock(nn.Module):
 
 
 class DoubleConvBatchNormReluBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True):
         super().__init__()
         self.layers = nn.Sequential(
-            ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding),
-            ConvBatchNormReluBlock(out_channels, out_channels, kernel_size, stride, padding)
+            ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding, bias),
+            ConvBatchNormReluBlock(out_channels, out_channels, kernel_size, stride, padding, bias)
         )
 
     def forward(self, x):
@@ -30,11 +32,11 @@ class DoubleConvBatchNormReluBlock(nn.Module):
 
 
 class MultiConvBatchNormReluBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, num_layers=2, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels, out_channels, num_layers=2, kernel_size=3, stride=1, padding=1, bias=True):
         super().__init__()
         layers = []
         for i in range(num_layers):
-            layers.append(ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding))
+            layers.append(ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding, bias))
             in_channels = out_channels
         self.layers = nn.Sequential(*layers)
 
@@ -43,21 +45,21 @@ class MultiConvBatchNormReluBlock(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride):
+    def __init__(self, in_channels, out_channels, stride, bias=False):
         super().__init__()
         self.relu = nn.ReLU()
         self.layers = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=bias),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=bias),
             nn.BatchNorm2d(out_channels)
         )
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_channels != out_channels:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=bias),
                 nn.BatchNorm2d(out_channels)
             )
 
@@ -68,11 +70,11 @@ class ResidualBlock(nn.Module):
 
 
 class UpsampleConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=True):
         super().__init__()
         self.layers = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding)
+            ConvBatchNormReluBlock(in_channels, out_channels, kernel_size, stride, padding, bias)
         )
 
     def forward(self, x):
