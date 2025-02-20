@@ -11,8 +11,8 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from networks.discriminator import Discriminator
-from networks.model import BAGon
+from src.networks.discriminator import Discriminator
+from src.networks.model import BAGon
 
 
 class Trainer:

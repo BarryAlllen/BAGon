@@ -7,6 +7,7 @@ from typing import Optional
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+print(os.getcwd())
 
 class TrainDataset(Dataset):
     def __init__(self, directory: str, image_size: int, transform: Optional[transforms.Compose] = None):

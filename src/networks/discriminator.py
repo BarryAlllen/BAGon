@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from networks.common import ConvBatchNormReluBlock
+from src.networks.common import ConvBatchNormReluBlock
 
 
 class Discriminator(nn.Module):

@@ -4,8 +4,8 @@ import argparse
 
 from torch.backends import cudnn
 
-from loaders.data_loader import create_dataloaders
-from train import Trainer
+from src.loaders.data_loader import create_dataloaders
+from src.train import Trainer
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
