@@ -45,9 +45,9 @@ class Decoder(nn.Module):
             ConvBatchNormReluBlock(in_channels, 64, 3, 1),
             ConvBatchNormReluBlock(64, 64, 3, 1),
             ConvBatchNormReluBlock(64, 64, 3, 1),
-            ResidualBlock(64, 64, 3, 1),
-            ResidualBlock(64, 64, 3, 1),
-            ResidualBlock(64, 64, 3, 1),
+            ResidualBlock(64, 64, 1),
+            ResidualBlock(64, 64, 1),
+            ResidualBlock(64, 64, 1),
         )
         self.extractor = Extractor(in_channels=64)
 
