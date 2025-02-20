@@ -45,8 +45,7 @@ class TrainDataset(Dataset):
         depth_mask = (depth_mask.transpose((2, 0, 1)) + 1) * 3
 
         message = np.random.rand(30)
-        message[message >= 0.5] = 1
-        message[message < 0.5] = 0
+        message = np.round(message)
 
         return image_origin, edge_mask, depth_mask, message
 
