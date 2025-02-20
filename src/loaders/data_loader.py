@@ -37,7 +37,7 @@ def create_dataloaders(
     test_dataloader = DataLoader(
         dataset=test_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=num_workers,
         drop_last=False
     )
