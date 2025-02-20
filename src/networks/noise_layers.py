@@ -218,7 +218,7 @@ def Moire_Distortion(embed_image):
     return Z
 
 
-class ScreenShootingNoise(nn.Module):
+class ScreenShootingNoiseLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -245,7 +245,7 @@ class ScreenShootingNoise(nn.Module):
         return noised_image
 
 
-class NoneNoise(nn.Module):
+class NoneNoiseLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
