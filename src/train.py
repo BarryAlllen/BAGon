@@ -96,10 +96,10 @@ class Trainer:
                 self.bagon_net.train()
                 self.discriminator.train()
 
-                image = tensor(image, device=self.device, requires_grad=True)
-                edge_mask = tensor(edge_mask, device=self.device)
-                depth_mask = tensor(depth_mask, device=self.device)
-                message = tensor(message, dtype=torch.float, device=self.device)
+                image = image.to(self.device).requires_grad_(True)
+                edge_mask = edge_mask.to(self.device)
+                depth_mask = depth_mask.to(self.device)
+                message = message.to(dtype=torch.float).to(self.device)
 
                 image_encoded, image_encoded_noised, message_decoded = self.bagon_net(image, message)  # do forward pass
                 message_loss = self.mse_loss(message_decoded, message)
