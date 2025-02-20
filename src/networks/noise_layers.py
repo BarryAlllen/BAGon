@@ -242,7 +242,7 @@ class ScreenShootingNoiseLayer(nn.Module):
         # Gaussian noise
         noised_image = noised_image + 0.001 ** 0.5 * torch.randn(noised_image.size()).to(device)
 
-        return noised_image
+        return noised_image.to(torch.float)
 
 
 class NoneNoiseLayer(nn.Module):
