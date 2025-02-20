@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from torch import optim, tensor
+from torch import optim, tensor, dtype
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -75,13 +75,16 @@ class Trainer:
         self.bce_loss = nn.BCEWithLogitsLoss()
         self.mse_loss = nn.MSELoss()
 
-    def train(self, train_loader, test_loader, epochs):
+    def train(self, epochs):
 
         train_loss = 0.0
         decoder_loss = 0.0
         guide_mask_loss = 0.0
         gen_loss = 0.0
         dis_loss = 0.0
+
+        test_corrcet_total = 0.0
+        test_corrcet_best = 0.0
 
         for epoch in tqdm(range(self.epochs), desc="Total"):
             loss_show  = 0.0
@@ -94,17 +97,17 @@ class Trainer:
                 self.bagon_net.train()
                 self.discriminator.train()
 
-                image = tensor(image, requires_grad=True).to(self.device)
-                edge_mask = tensor(edge_mask).to(self.device)
-                depth_mask = tensor(depth_mask).to(self.device)
-                message = tensor(message).to(self.device)
+                image = tensor(image, device=self.device, requires_grad=True)
+                edge_mask = tensor(edge_mask, device=self.device)
+                depth_mask = tensor(depth_mask, device=self.device)
+                message = tensor(message, dtype=torch.float, device=self.device)
 
                 image_encoded, image_encoded_noised, message_decoded = self.bagon_net(image, message)  # do forward pass
                 message_loss = self.mse_loss(message_decoded, message)
 
                 # get gradient mask
                 image_grad = torch.autograd.grad(message_loss, image, create_graph=True)[0]
-                gradient_mask = torch.zeros(image_grad.shape).to(self.device)
+                gradient_mask = torch.zeros(image_grad.shape, device=self.device)
 
                 for i in range(image_grad.shape[0]):
                     a = image_grad[i, :, :, :]
@@ -159,7 +162,7 @@ class Trainer:
                 discriminator_fake_loss_show += discriminator_fake_loss.item()
 
                 if (batch + 1) % self.print_for_batch == 0:
-                    print(f"Epoch [{epoch + 1}/{epochs}], Batch [{batch + 1}/{len(train_loader)}], "
+                    print(f"Epoch [{epoch + 1}/{epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
                           f"Loss: {loss_show / self.print_for_batch}, "
                           f"Message Loss: {message_loss_show / self.print_for_batch}, "
                           f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
@@ -180,12 +183,28 @@ class Trainer:
             if self.is_scheduler:
                 self.scheduler.step()
 
-            correct = 0.0
-            total = 0.0
+            wrong_correct_bit = 0.0
+            correct_bit_total = 0.0
             self.bagon_net.eval()
             # self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask)
             with torch.inference_mode():
-                pass
+                for batch, (image_test, message_test) in enumerate(self.test_dataloader):
+                    image_test = tensor(image_test, device=self.device)
+                    message_test = tensor(message_test, dtype=torch.float, device=self.device)
+
+                    image_encoded_test, _, message_decoded_test = self.bagon_net(image_test, message_test)
+
+                    message_decoded_test = torch.round(message_decoded_test).int()
+                    wrong_correct_bit += torch.sum(torch.abs(message_decoded_test - message_test)).item()  # .item()返回python标量
+                    correct_bit_total += image_test.shape[0] * message_test.shape[1]
+
+            test_correct = (1 - wrong_correct_bit / wrong_correct_bit) * 100.0
+            print(f"[epoch: {epoch + 1}] Correct Rate: {test_correct:.2f}%")
+
+            if test_correct >= test_corrcet_best:
+                test_corrcet_best = test_correct
+
+            test_corrcet_total += test_correct
 
 
     def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask):
