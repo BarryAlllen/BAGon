@@ -236,8 +236,9 @@ class Trainer:
 
             wrong_correct_bit = 0.0
             correct_bit_total = 0.0
+
+            print('Testing begins...')
             self.bagon_net.eval()
-            print('validation...')
             with torch.inference_mode():
                 for batch, (image_test, message_test) in enumerate(self.test_dataloader):
                     image_test = image_test.to(self.device)
@@ -245,14 +246,9 @@ class Trainer:
 
                     image_encoded_test, _, message_decoded_test = self.bagon_net(image_test, message_test)
                     message_test = message_test.to(dtype=torch.int)
-                    # print(f"meg_origin: {message_test}, type: {message_test.dtype}, shape: {message_test.shape}")
-                    # print(f"msg_decoded_1: {message_decoded_test}, type: {message_decoded_test.dtype}, shape: {message_decoded_test.shape}")
                     message_decoded_test = torch.round(message_decoded_test).to(dtype=torch.int)
-                    # print(f"msg_decoded_2: {message_decoded_test}, type: {message_decoded_test.dtype}, shape: {message_decoded_test.shape}")
                     wrong_correct_bit += torch.sum(torch.abs(message_decoded_test - message_test)).item()
-                    # print(f"wrong_correct_bit: {wrong_correct_bit}")
                     correct_bit_total += message_test.shape[0] * message_test.shape[1]
-                    # print(f"correct_bit_total: {correct_bit_total}")
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
             print(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
