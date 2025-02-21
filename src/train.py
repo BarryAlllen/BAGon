@@ -114,7 +114,7 @@ class Trainer:
             generator_loss_show  = 0.0
             discriminator_fake_loss_show  = 0.0
 
-            print(f"Epoch [{epoch+1}/{self.epochs}] training begins, lr={self.lr}")
+            print(f"Epoch [{epoch+1}/{self.epochs}] Training begins, lr={self.lr}")
             progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Batch training")
             for batch, (image, edge_mask, depth_mask, message) in progress_bar:
                 self.bagon_net.train()
