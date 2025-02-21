@@ -12,9 +12,9 @@ def get_time():
             gmt_time = time.strptime(net_date[5:25], "%d %b %Y %H:%M:%S")
             bj_timestamp = int(time.mktime(gmt_time) + 8 * 60 * 60)
             bj_timestamp =  datetime.fromtimestamp(bj_timestamp)
-            return bj_timestamp.strftime("%y-%m-%d-%H-%M")
+            return bj_timestamp.strftime("%y-%m-%d_%Hh-%Mm-%Ss")
     except Exception as exc:
-        return datetime.now().strftime("%y-%m-%d-%H-%M")
+        return datetime.now().strftime("%y-%m-%d_%Hh-%Mm-%Ss")
 
-# if __name__ == "__main__":
-#     print(get_time())
+if __name__ == "__main__":
+    print(get_time())
