@@ -1,6 +1,7 @@
 
 import cv2
 import math
+import wandb
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,6 +15,7 @@ from torch.utils.data import DataLoader
 
 from src.networks.discriminator import Discriminator
 from src.networks.model import BAGon
+from src.utils import check_time
 
 
 class Trainer:
@@ -49,6 +51,7 @@ class Trainer:
         self.setup_model()
         self.setup_optimizer()
         self.setup_loss_function()
+        self.setup_tools()
 
         self.print_for_epoch = 1
         self.print_for_batch = 1
@@ -68,12 +71,26 @@ class Trainer:
         self.optimizer = optim.Adam(self.bagon_net.parameters())
         if self.is_scheduler:
             self.scheduler = LambdaLR(self.optimizer, self.lr_lambda)
+        self.lr = self.optimizer.param_groups[0]['lr']
 
         self.optimizer_discriminator = optim.Adam(self.discriminator.parameters())
 
     def setup_loss_function(self):
         self.bce_loss = nn.BCEWithLogitsLoss()
         self.mse_loss = nn.MSELoss()
+
+    def setup_tools(self):
+        self.wandb = wandb
+        self.wandb.init(
+            project="bagon",
+            name=check_time.get_time(),
+            config={
+                "learning_rate": self.lr,
+                "architecture": "U-Net",
+                "dataset": "COCO",
+                "epochs": self.epochs,
+            }
+        )
 
     def train(self):
 
@@ -93,7 +110,9 @@ class Trainer:
             generator_loss_show  = 0.0
             discriminator_fake_loss_show  = 0.0
 
-            for batch, (image, edge_mask, depth_mask, message) in tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Training"):
+            print(f"Epoch [{epoch+1}/{self.epochs}] training begins, lr={self.lr}")
+            progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Batch training")
+            for batch, (image, edge_mask, depth_mask, message) in progress_bar:
                 self.bagon_net.train()
                 self.discriminator.train()
 
@@ -154,6 +173,8 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
+                self.lr = self.optimizer.param_groups[0]['lr']
+
                 loss_show += loss.item()
                 message_loss_show += message_loss.item()
                 mask_loss_show += mask_loss.item()
@@ -167,11 +188,23 @@ class Trainer:
                           f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
                           f"Generator Loss: {generator_loss_show / self.print_for_batch}, "
                           f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch}")
+
+                    # self.wandb.log({
+                    #     "Loss": loss_show / self.print_for_batch,
+                    #     "Message Loss": message_loss_show / self.print_for_batch,
+                    #     "Mask Loss": mask_loss_show / self.print_for_batch,
+                    #     "Generator Loss": generator_loss_show / self.print_for_batch,
+                    #     "Discriminator Fake Loss": discriminator_fake_loss_show / self.print_for_batch,
+                    #     "lr": self.lr
+                    # },step=batch)
+
                     loss_show = 0.0
                     message_loss_show = 0.0
                     mask_loss_show = 0.0
                     generator_loss_show = 0.0
                     discriminator_fake_loss_show = 0.0
+
+                self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch)
 
                 train_loss += loss.item()
                 decoder_loss += message_loss.item()
@@ -179,34 +212,55 @@ class Trainer:
                 gen_loss += generator_loss.item()
                 dis_loss += discriminator_fake_loss.item()
 
+            self.wandb.log({
+                "Train Loss": train_loss / len(self.train_dataloader),
+                "Decoder Loss": decoder_loss / len(self.train_dataloader),
+                "Guide Mask Loss": guide_mask_loss / len(self.train_dataloader),
+                "Generator Loss": gen_loss / len(self.train_dataloader),
+                "Discriminator Fake Loss": dis_loss / len(self.train_dataloader),
+                "lr": self.lr
+            })
+
+            train_loss = 0.0
+            decoder_loss = 0.0
+            guide_mask_loss = 0.0
+            gen_loss = 0.0
+            dis_loss = 0.0
+
             if self.is_scheduler:
                 self.scheduler.step()
 
             wrong_correct_bit = 0.0
             correct_bit_total = 0.0
             self.bagon_net.eval()
-            # self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask)
+            print('validation...')
             with torch.inference_mode():
                 for batch, (image_test, message_test) in enumerate(self.test_dataloader):
                     image_test = image_test.to(self.device)
                     message_test = message_test.to(dtype=torch.float).to(self.device)
 
                     image_encoded_test, _, message_decoded_test = self.bagon_net(image_test, message_test)
-
-                    message_decoded_test = torch.round(message_decoded_test).int()
+                    message_test = message_test.to(dtype=torch.int)
+                    # print(f"meg_origin: {message_test}, type: {message_test.dtype}, shape: {message_test.shape}")
+                    # print(f"msg_decoded_1: {message_decoded_test}, type: {message_decoded_test.dtype}, shape: {message_decoded_test.shape}")
+                    message_decoded_test = torch.round(message_decoded_test).to(dtype=torch.int)
+                    # print(f"msg_decoded_2: {message_decoded_test}, type: {message_decoded_test.dtype}, shape: {message_decoded_test.shape}")
                     wrong_correct_bit += torch.sum(torch.abs(message_decoded_test - message_test)).item()
-                    correct_bit_total += image_test.shape[0] * message_test.shape[1]
+                    # print(f"wrong_correct_bit: {wrong_correct_bit}")
+                    correct_bit_total += message_test.shape[0] * message_test.shape[1]
+                    # print(f"correct_bit_total: {correct_bit_total}")
 
-            test_correct = (1 - wrong_correct_bit / wrong_correct_bit) * 100.0
-            print(f"[epoch: {epoch + 1}] Correct Rate: {test_correct:.2f}%")
+            test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
+            print(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
 
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
 
             test_corrcet_total += test_correct
 
+        self.wandb.finish()
 
-    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask):
+    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch):
         t = np.random.randint(image.shape[0])
         img_1 = (image[t, :, :, :].detach().to('cpu').numpy() + 1) / 2 * 255
         img_1 = np.transpose(img_1, (1, 2, 0))
@@ -239,10 +293,5 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        current_time = datetime.now()
-        current_time = current_time.strftime("%Y-%m-%d-%H-%M")
-
-        # if not os.path.exists(self.result_dir + '/Image/images/' + current_time + '/'):
-        #     os.makedirs(self.result_dir + '/Image/images/' + current_time + '/')
-        cv2.imwrite(f'{current_time}.png', result)
+        cv2.imwrite(f'data/result/epoch{epoch+1}-batch{batch+1}.png', result)
 
