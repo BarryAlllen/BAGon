@@ -16,5 +16,5 @@ def get_time():
     except Exception as exc:
         return datetime.now().strftime("%y-%m-%d_%Hh-%Mm-%Ss")
 
-if __name__ == "__main__":
-    print(get_time())
+# if __name__ == "__main__":
+#     print(get_time())
