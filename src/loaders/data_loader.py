@@ -1,3 +1,4 @@
+
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -11,7 +12,7 @@ def create_dataloaders(
         batch_size: int,
         num_workers: int,
         transform: transforms.Compose = None,
-        message_matrix_path: str = "./utils/test_matrix.npy"
+        message_matrix_path: str = "src/utils/test_matrix.npy"
 ):
     train_dataset = TrainDataset(
         directory=train_dir,

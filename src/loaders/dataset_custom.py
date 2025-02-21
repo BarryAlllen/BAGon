@@ -4,10 +4,9 @@ import cv2
 import numpy as np
 
 from typing import Optional
+
 from torch.utils.data import Dataset
 from torchvision import transforms
-
-print(os.getcwd())
 
 class TrainDataset(Dataset):
     def __init__(self, directory: str, image_size: int, transform: Optional[transforms.Compose] = None):
@@ -82,8 +81,8 @@ class TestDataset(Dataset):
 
         filename = self.paths[index]
         order_num = filename.split('.')[0]
-        order_num = int(order_num)
-        message_test = self.message_matrix[order_num, :]
+        order_num = int(order_num) - 1
+        message_test = self.message_matrix[order_num]
 
         return image_test, message_test
 

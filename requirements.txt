@@ -6,3 +6,4 @@ scipy
 kornia
 pillow
 torchinfo
+numpy==1.23.5
