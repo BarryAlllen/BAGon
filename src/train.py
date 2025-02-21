@@ -51,7 +51,7 @@ class Trainer:
         self.setup_loss_function()
 
         self.print_for_epoch = 1
-        self.print_for_batch = 100
+        self.print_for_batch = 1
 
     def setup_model(self):
         self.bagon_net = BAGon().to(self.device)
@@ -86,14 +86,14 @@ class Trainer:
         test_corrcet_total = 0.0
         test_corrcet_best = 0.0
 
-        for epoch in tqdm(range(self.epochs), desc="Total"):
+        for epoch in range(self.epochs):
             loss_show  = 0.0
             message_loss_show  = 0.0
             mask_loss_show  = 0.0
             generator_loss_show  = 0.0
             discriminator_fake_loss_show  = 0.0
 
-            for batch, (image, edge_mask, depth_mask, message) in enumerate(self.train_dataloader):
+            for batch, (image, edge_mask, depth_mask, message) in tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Training"):
                 self.bagon_net.train()
                 self.discriminator.train()
 
@@ -161,7 +161,7 @@ class Trainer:
                 discriminator_fake_loss_show += discriminator_fake_loss.item()
 
                 if (batch + 1) % self.print_for_batch == 0:
-                    print(f"Epoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
+                    print(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
                           f"Loss: {loss_show / self.print_for_batch}, "
                           f"Message Loss: {message_loss_show / self.print_for_batch}, "
                           f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
