@@ -252,6 +252,9 @@ class Trainer:
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
             print(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
+            self.wandb.log({
+                "Correct Rate": test_correct,
+            })
 
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
