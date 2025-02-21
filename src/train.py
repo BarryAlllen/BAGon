@@ -26,7 +26,8 @@ class Trainer:
             test_dataloader: DataLoader,
             seed: int,
             is_scheduler: bool = False,
-            is_parallel: bool = False
+            is_parallel: bool = False,
+            model_save_path = 'data/result/model/model.pth'
     ):
         self.epochs = epochs
 
@@ -53,8 +54,11 @@ class Trainer:
         self.setup_loss_function()
         self.setup_tools()
 
+        self.model_save_path = model_save_path
+
+        self.model_save_step = 10
         self.print_for_epoch = 1
-        self.print_for_batch = 1
+        self.print_for_batch = 25
 
     def setup_model(self):
         self.bagon_net = BAGon().to(self.device)
@@ -204,7 +208,7 @@ class Trainer:
                     generator_loss_show = 0.0
                     discriminator_fake_loss_show = 0.0
 
-                self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch)
+                    self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch)
 
                 train_loss += loss.item()
                 decoder_loss += message_loss.item()
@@ -260,6 +264,9 @@ class Trainer:
                 test_corrcet_best = test_correct
 
             test_corrcet_total += test_correct
+
+            if (epoch + 1) % self.model_save_step == 0:
+                torch.save(self.bagon_net.state_dict(), self.model_save_path)
 
         self.wandb.finish()
 
