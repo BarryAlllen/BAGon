@@ -6,7 +6,8 @@ from src.networks.decoder import Decoder
 from src.networks.encoder import Encoder
 from src.networks.noise_layers import ScreenShootingNoiseLayer, NoneNoiseLayer
 
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
+
 class BAGon(nn.Module):
     def __init__(self, in_channels=3, out_channels=3, is_noise=True):
         super().__init__()
