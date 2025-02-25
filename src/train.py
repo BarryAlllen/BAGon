@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 
 from tqdm import tqdm
-from datetime import datetime
 
 from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
@@ -299,5 +298,5 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        cv2.imwrite(f'data/result/epoch{epoch+1}-batch{batch+1}.png', result)
+        cv2.imwrite(f'data/result/epoch_batch_image/epoch{epoch+1}-batch{batch+1}.png', result)
 

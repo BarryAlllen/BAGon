@@ -12,7 +12,7 @@ class TrainDataset(Dataset):
     def __init__(self, directory: str, image_size: int, transform: Optional[transforms.Compose] = None):
         super().__init__()
         self.directory = directory
-        self.paths = os.listdir(directory)
+        self.paths = [f for f in os.listdir(directory) if f.lower().endswith(('.jpg', '.png'))]
         self.image_size = image_size
         self.transform = transform
 
@@ -25,6 +25,7 @@ class TrainDataset(Dataset):
         return len(self.paths)
 
     def __getitem__(self, index):
+        print(index)
         size = self.image_size
         image = self.load_image(index=index)
 
@@ -53,7 +54,7 @@ class TestDataset(Dataset):
     def __init__(self, directory: str, image_size: int, message_matrix_path: str, transform: Optional[transforms.Compose] = None):
         super().__init__()
         self.directory = directory
-        self.paths = os.listdir(directory)
+        self.paths = [f for f in os.listdir(directory) if f.lower().endswith(('.jpg', '.png'))]
         self.image_size = image_size
         self.message_matrix = np.load(message_matrix_path)
         self.transform = transform
@@ -79,17 +80,6 @@ class TestDataset(Dataset):
         image_test = image_test.transpose((2, 0, 1))
         image_test = np.float32(image_test / 255.0 * 2 - 1)
 
-        filename = self.paths[index]
-        order_num = filename.split('.')[0]
-        order_num = int(order_num) - 1
-        message_test = self.message_matrix[order_num]
+        message_test = self.message_matrix[index]
 
         return image_test, message_test
-
-
-
-
-
-
-
-
