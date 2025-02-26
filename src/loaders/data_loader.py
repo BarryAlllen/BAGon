@@ -47,7 +47,7 @@ def create_dataloaders(
 
 # dataloader,_ = create_dataloaders(
 #         train_dir="../../data/train",
-#         test_dir="../../data/predict",
+#         test_dir="../../data/test",
 #         image_size=128,
 #         batch_size=8,
 #         num_workers=1,

@@ -25,7 +25,6 @@ class TrainDataset(Dataset):
         return len(self.paths)
 
     def __getitem__(self, index):
-        print(index)
         size = self.image_size
         image = self.load_image(index=index)
 
