@@ -55,29 +55,29 @@ class Encoder(nn.Module):
 
         x4 = self.down_sample_2x2(x3)
 
-        x5 = self.down_sample_4x4(x4)
-        x6 = x5.repeat(1, 1, 4, 4)
+        x44 = self.down_sample_4x4(x4)
+        x44 = x44.repeat(1, 1, 4, 4)
 
         message_1 = self.message_process(message=message,  is_interpolate=False)
-        x4 = torch.cat(tensors=(x4, x6, message_1), dim=1)
+        x4 = torch.cat(tensors=(x4, x44, message_1), dim=1)
 
-        x44 = self.up_sample_1(x4)
-        x44 = self.attention_1(x44)
-        message_2 = self.message_process(message=message, height=x44.shape[2], width=x44.shape[3])
-        x44 = torch.cat(tensors=(x3, x44, message_2), dim=1)
-        x44 = self.conv_block_4(x44)
+        x33 = self.up_sample_1(x4)
+        x33 = self.attention_1(x33)
+        message_2 = self.message_process(message=message, height=x33.shape[2], width=x33.shape[3])
+        x33 = torch.cat(tensors=(x3, x33, message_2), dim=1)
+        x33 = self.conv_block_4(x33)
 
-        x33 = self.up_sample_2(x44)
-        x33 = self.attention_2(x33)
-        message_3 = self.message_process(message=message, height=x33.shape[2], width=x33.shape[3])
-        x33 = torch.cat(tensors=(x2, x33, message_3), dim=1)
-        x33 = self.conv_block_5(x33)
+        x22 = self.up_sample_2(x33)
+        x22 = self.attention_2(x22)
+        message_3 = self.message_process(message=message, height=x22.shape[2], width=x22.shape[3])
+        x22 = torch.cat(tensors=(x2, x22, message_3), dim=1)
+        x22 = self.conv_block_5(x22)
 
-        x22 = self.up_sample_3(x33)
-        x22 = self.attention_3(x22)
-        message_4 = self.message_process(message=message, height=x22.shape[2], width=x22.shape[3])
-        x22 = torch.cat(tensors=(x1, x22, message_4), dim=1)
-        x22 = self.conv_block_6(x22)
+        x11 = self.up_sample_3(x22)
+        x11 = self.attention_3(x11)
+        message_4 = self.message_process(message=message, height=x11.shape[2], width=x11.shape[3])
+        x11 = torch.cat(tensors=(x1, x11, message_4), dim=1)
+        x11 = self.conv_block_6(x11)
 
-        out = self.channel_adjust(x22)
+        out = self.channel_adjust(x11)
         return out
