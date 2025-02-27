@@ -34,6 +34,7 @@ class DiscriminatorV2(nn.Module):
             ConvolutionalBlockAttentionModule(in_channels=hidden_channels),
             ConvBatchNormReluBlock(in_channels=hidden_channels, out_channels=hidden_channels),
             ConvolutionalBlockAttentionModule(in_channels=hidden_channels),
+            ConvBatchNormReluBlock(in_channels=hidden_channels, out_channels=hidden_channels),
             nn.AdaptiveAvgPool2d(output_size=(1, 1))
         )
 

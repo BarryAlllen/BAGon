@@ -1,4 +1,3 @@
-
 import cv2
 import math
 import wandb
@@ -26,7 +25,7 @@ class Trainer:
             seed: int,
             is_scheduler: bool = False,
             is_parallel: bool = False,
-            model_save_path = 'data/result/model/model.pth'
+            model_save_path='data/result/model/model.pth'
     ):
         self.epochs = epochs
 
@@ -72,11 +71,13 @@ class Trainer:
 
     def setup_optimizer(self):
         self.optimizer = optim.Adam(self.bagon_net.parameters())
+        self.optimizer_discriminator = optim.Adam(self.discriminator.parameters())
+
         if self.is_scheduler:
             self.scheduler = LambdaLR(self.optimizer, self.lr_lambda)
+            self.scheduler_discriminator = LambdaLR(self.optimizer_discriminator, self.lr_lambda)
         self.lr = self.optimizer.param_groups[0]['lr']
-
-        self.optimizer_discriminator = optim.Adam(self.discriminator.parameters())
+        self.lr_discriminator = self.optimizer_discriminator.param_groups[0]['lr']
 
     def setup_loss_function(self):
         self.bce_loss = nn.BCEWithLogitsLoss()
@@ -107,14 +108,15 @@ class Trainer:
         test_corrcet_best = 0.0
 
         for epoch in range(self.epochs):
-            loss_show  = 0.0
-            message_loss_show  = 0.0
-            mask_loss_show  = 0.0
-            generator_loss_show  = 0.0
-            discriminator_fake_loss_show  = 0.0
+            loss_show = 0.0
+            message_loss_show = 0.0
+            mask_loss_show = 0.0
+            generator_loss_show = 0.0
+            discriminator_fake_loss_show = 0.0
 
-            print(f"Epoch [{epoch+1}/{self.epochs}] Training begins, lr={self.lr}")
-            progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Batch training")
+            print(f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr}, lr_discriminator={self.lr_discriminator}")
+            progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader),
+                                desc="Batch training")
             for batch, (image, edge_mask, depth_mask, message) in progress_bar:
                 self.bagon_net.train()
                 self.discriminator.train()
@@ -177,6 +179,7 @@ class Trainer:
                 self.optimizer.step()
 
                 self.lr = self.optimizer.param_groups[0]['lr']
+                self.lr_discriminator = self.optimizer_discriminator.param_groups[0]['lr']
 
                 loss_show += loss.item()
                 message_loss_show += message_loss.item()
@@ -207,7 +210,8 @@ class Trainer:
                     generator_loss_show = 0.0
                     discriminator_fake_loss_show = 0.0
 
-                    self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch)
+                    self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask,
+                                             depth_mask, epoch, batch)
 
                 train_loss += loss.item()
                 decoder_loss += message_loss.item()
@@ -232,6 +236,7 @@ class Trainer:
 
             if self.is_scheduler:
                 self.scheduler.step()
+                self.scheduler_discriminator.step()
 
             wrong_correct_bit = 0.0
             correct_bit_total = 0.0
@@ -265,7 +270,8 @@ class Trainer:
 
         self.wandb.finish()
 
-    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch):
+    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask,
+                            epoch, batch):
         t = np.random.randint(image.shape[0])
         img_1 = (image[t, :, :, :].detach().to('cpu').numpy() + 1) / 2 * 255
         img_1 = np.transpose(img_1, (1, 2, 0))
@@ -298,5 +304,4 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        cv2.imwrite(f'data/result/epoch_batch_image/epoch{epoch+1}-batch{batch+1}.png', result)
-
+        cv2.imwrite(f'data/result/epoch_batch_image/epoch{epoch + 1}-batch{batch + 1}.png', result)
