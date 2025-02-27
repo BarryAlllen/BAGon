@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from src.networks.decoder import Decoder
+from src.networks.decoder import DecoderV2 as Decoder
 from src.networks.encoder import EncoderV2 as Encoder
 from src.networks.noise_layers import ScreenShootingNoiseLayer, NoneNoiseLayer
 

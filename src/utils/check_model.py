@@ -3,9 +3,9 @@ from torchinfo import summary
 
 import torch
 
-from src.networks.decoder import Decoder
+from src.networks.decoder import DecoderV2 as Decoder
 from src.networks.discriminator import Discriminator
-from src.networks.encoder import EncoderV2
+from src.networks.encoder import EncoderV2 as Encoder
 from src.networks.noise_layers import ScreenShootingNoiseLayer
 
 # show the info of model
@@ -22,7 +22,7 @@ discriminator_input_size = [1, 3, 1, 2]
 noise_input_size = [3, 1, 1, 2]
 
 def encoder_info(input_size):
-    model = EncoderV2().to(device)
+    model = Encoder().to(device)
     print(model)
     summary(model, input_size=input_size)
 
@@ -42,8 +42,8 @@ def noise_info(input_size):
     summary(model, input_size=input_size)
 
 def main():
-    encoder_info(encoder_input_size1)
-    # decoder_info(decoder_input_size1)
+    # encoder_info(encoder_input_size1)
+    decoder_info(decoder_input_size1)
     # disciminator_info(discriminator_input_size)
     # noise_info(noise_input_size)
 
