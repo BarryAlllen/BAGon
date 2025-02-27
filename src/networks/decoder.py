@@ -24,9 +24,6 @@ class Extractor(nn.Module):
         self.layer5 = nn.Conv2d(64, 1, kernel_size=1, stride=1, padding=0, bias=False)
         self.linear = nn.Linear(256, 30)
         self.attention = ConvolutionalBlockAttentionModule(64)
-        self.attention = ConvolutionalBlockAttentionModule(64)
-        self.attention = ConvolutionalBlockAttentionModule(64)
-        self.attention = ConvolutionalBlockAttentionModule(64)
 
     def forward(self, x):
         out = self.layer1(x)
