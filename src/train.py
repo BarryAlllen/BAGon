@@ -12,7 +12,7 @@ from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 
-from src.networks.discriminator import Discriminator
+from src.networks.discriminator import DiscriminatorV2 as Discriminator
 from src.networks.model import BAGon
 from src.utils import check_time
 
