@@ -10,13 +10,13 @@ from src.networks.common import DoubleConvBatchNormReluBlock, DownsampleMaxPoolB
 class Encoder(nn.Module):
     def __init__(self, in_channels=3, out_channels=3):
         super().__init__()
-
         self.conv_block_1 = DoubleConvBatchNormReluBlock(in_channels=in_channels, out_channels=16)
         self.conv_block_2 = DoubleConvBatchNormReluBlock(in_channels=16, out_channels=32)
         self.conv_block_3 = DoubleConvBatchNormReluBlock(in_channels=32, out_channels=64)
-        self.conv_block_4 = DoubleConvBatchNormReluBlock(in_channels=64 * 3, out_channels=64)
-        self.conv_block_5 = DoubleConvBatchNormReluBlock(in_channels=32 * 2 + 64, out_channels=32)
-        self.conv_block_6 = DoubleConvBatchNormReluBlock(in_channels=16 * 2 + 64, out_channels=16)
+
+        self.conv_block_11 = DoubleConvBatchNormReluBlock(in_channels=16 * 2 + 64, out_channels=16)
+        self.conv_block_22 = DoubleConvBatchNormReluBlock(in_channels=32 * 2 + 64, out_channels=32)
+        self.conv_block_33 = DoubleConvBatchNormReluBlock(in_channels=64 * 3, out_channels=64)
 
         self.down_sample_2x2 = DownsampleMaxPoolBlock(kernel_size=2, stride=2)
         self.down_sample_4x4 = DownsampleMaxPoolBlock(kernel_size=4, stride=4)
@@ -65,19 +65,19 @@ class Encoder(nn.Module):
         x33 = self.attention_3(x33)
         message_3 = self.message_process(message=message, height=x33.shape[2], width=x33.shape[3])
         x33 = torch.cat(tensors=(x3, x33, message_3), dim=1)
-        x33 = self.conv_block_4(x33)
+        x33 = self.conv_block_33(x33)
 
         x22 = self.up_sample_2(x33)
         x22 = self.attention_2(x22)
         message_2 = self.message_process(message=message, height=x22.shape[2], width=x22.shape[3])
         x22 = torch.cat(tensors=(x2, x22, message_2), dim=1)
-        x22 = self.conv_block_5(x22)
+        x22 = self.conv_block_22(x22)
 
         x11 = self.up_sample_1(x22)
         x11 = self.attention_1(x11)
         message_1 = self.message_process(message=message, height=x11.shape[2], width=x11.shape[3])
         x11 = torch.cat(tensors=(x1, x11, message_1), dim=1)
-        x11 = self.conv_block_6(x11)
+        x11 = self.conv_block_11(x11)
 
         out = self.channel_adjust(x11)
         return out
