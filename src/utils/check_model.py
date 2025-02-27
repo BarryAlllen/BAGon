@@ -5,7 +5,7 @@ import torch
 
 from src.networks.decoder import Decoder
 from src.networks.discriminator import Discriminator
-from src.networks.encoder import Encoder
+from src.networks.encoder import EncoderV2
 from src.networks.noise_layers import ScreenShootingNoiseLayer
 
 # show the info of model
@@ -22,7 +22,7 @@ discriminator_input_size = [1, 3, 1, 2]
 noise_input_size = [3, 1, 1, 2]
 
 def encoder_info(input_size):
-    model = Encoder().to(device)
+    model = EncoderV2().to(device)
     print(model)
     summary(model, input_size=input_size)
 

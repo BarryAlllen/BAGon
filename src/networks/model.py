@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from src.networks.decoder import Decoder
-from src.networks.encoder import Encoder
+from src.networks.encoder import EncoderV2 as Encoder
 from src.networks.noise_layers import ScreenShootingNoiseLayer, NoneNoiseLayer
 
 # torch.autograd.set_detect_anomaly(True)
