@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--image_size", type=int, default=128)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--seed", type=int, default=3504)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)

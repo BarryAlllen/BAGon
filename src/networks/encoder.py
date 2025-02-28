@@ -10,6 +10,7 @@ from src.networks.common import DoubleConvBatchNormReluBlock, DownsampleMaxPoolB
 class Encoder(nn.Module):
     def __init__(self, in_channels=3, out_channels=3):
         super().__init__()
+        print("Model: Encoder")
         self.conv_block_1 = DoubleConvBatchNormReluBlock(in_channels=in_channels, out_channels=16)
         self.conv_block_2 = DoubleConvBatchNormReluBlock(in_channels=16, out_channels=32)
         self.conv_block_3 = DoubleConvBatchNormReluBlock(in_channels=32, out_channels=64)
@@ -85,6 +86,7 @@ class Encoder(nn.Module):
 
 class EncoderV2(nn.Module):
     def __init__(self, in_channels=3, out_channels=3):
+        print("Model: EncoderV2")
         super().__init__()
 
         self.conv_block_1 = DoubleConvBatchNormReluBlock(in_channels=in_channels, out_channels=8)
@@ -93,10 +95,8 @@ class EncoderV2(nn.Module):
         self.conv_block_4 = DoubleConvBatchNormReluBlock(in_channels=32, out_channels=64)
         self.conv_block_5 = DoubleConvBatchNormReluBlock(in_channels=64, out_channels=128)
 
-        self.down_sample_1 = DownsampleMaxPoolBlock(kernel_size=2, stride=2)
-        self.down_sample_2 = DownsampleMaxPoolBlock(kernel_size=2, stride=2)
-        self.down_sample_3 = DownsampleMaxPoolBlock(kernel_size=2, stride=2)
-        self.down_sample_4 = DownsampleMaxPoolBlock(kernel_size=4, stride=4)
+        self.down_sample_2x2 = DownsampleMaxPoolBlock(kernel_size=2, stride=2)
+        self.down_sample_4x4 = DownsampleMaxPoolBlock(kernel_size=4, stride=4)
 
         self.up_sample_1 = nn.Upsample(scale_factor=2)
         self.up_sample_2 = nn.Upsample(scale_factor=2)
@@ -116,7 +116,6 @@ class EncoderV2(nn.Module):
         self.attention_2 = ConvolutionalBlockAttentionModule(32)
         self.attention_3 = ConvolutionalBlockAttentionModule(64)
         self.attention_4 = ConvolutionalBlockAttentionModule(128)
-        self.attention_5 = ConvolutionalBlockAttentionModule(128)
 
         self.linear_message = nn.Linear(in_features=30, out_features=256)
         self.conv_message = DoubleConvBatchNormReluBlock(in_channels=1, out_channels=64)
@@ -138,17 +137,16 @@ class EncoderV2(nn.Module):
         x1 = self.conv_block_1(x)
         x1 = self.conv_block_2(x1)
 
-        x2 = self.down_sample_1(x1)
+        x2 = self.down_sample_2x2(x1)
         x2 = self.conv_block_3(x2)
 
-        x3 = self.down_sample_2(x2)
+        x3 = self.down_sample_2x2(x2)
         x3 = self.conv_block_4(x3)
 
-        x4 = self.down_sample_3(x3)
+        x4 = self.down_sample_2x2(x3)
         x4 = self.conv_block_5(x4)
 
-        x5 = self.down_sample_4(x4)
-        x5 = self.attention_5(x5)
+        x5 = self.down_sample_4x4(x4)
 
         x44 = x5.repeat(1, 1, 4, 4)
         message_4 = self.message_process(message=message, is_interpolate=False)

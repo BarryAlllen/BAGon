@@ -1,11 +1,11 @@
 
-from torchinfo import summary
-
 import torch
 
+from torchinfo import summary
+
+from src.networks.encoder import EncoderV2 as Encoder
 from src.networks.decoder import DecoderV2 as Decoder
 from src.networks.discriminator import DiscriminatorV2 as Discriminator
-from src.networks.encoder import EncoderV2 as Encoder
 from src.networks.noise_layers import ScreenShootingNoiseLayer
 
 # show the info of model
@@ -43,8 +43,8 @@ def noise_info(input_size):
 
 def main():
     # encoder_info(encoder_input_size1)
-    # decoder_info(decoder_input_size1)
-    disciminator_info(discriminator_input_size)
+    decoder_info(decoder_input_size1)
+    # disciminator_info(discriminator_input_size)
     # noise_info(noise_input_size)
 
 if __name__ == '__main__':
