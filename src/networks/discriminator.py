@@ -8,7 +8,7 @@ from src.networks.common import ConvBatchNormReluBlock
 class Discriminator(nn.Module):
     def __init__(self, in_channels=3, hidden_channels=64):
         super().__init__()
-        print("Model: Discriminator")
+        self.name = "Model: Discriminator"
         self.layers = nn.Sequential(
             ConvBatchNormReluBlock(in_channels=in_channels, out_channels=hidden_channels),
             ConvBatchNormReluBlock(in_channels=hidden_channels, out_channels=hidden_channels),
@@ -28,7 +28,7 @@ class Discriminator(nn.Module):
 class DiscriminatorV2(nn.Module):
     def __init__(self, in_channels=3, hidden_channels=64):
         super().__init__()
-        print("Model: DiscriminatorV2")
+        self.name = "Model: DiscriminatorV2"
         self.layers = nn.Sequential(
             ConvBatchNormReluBlock(in_channels=in_channels, out_channels=hidden_channels),
             ConvolutionalBlockAttentionModule(in_channels=hidden_channels),

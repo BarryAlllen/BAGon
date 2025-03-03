@@ -1,15 +1,16 @@
 
+import os
 import torch
 
 from torchinfo import summary
 
-from src.networks.encoder import EncoderV2 as Encoder
+from src.networks.encoder import EncoderV3 as Encoder
 from src.networks.decoder import DecoderV2 as Decoder
 from src.networks.discriminator import DiscriminatorV2 as Discriminator
 from src.networks.noise_layers import ScreenShootingNoiseLayer
 
 # show the info of model
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # device = 'cpu'
 
@@ -42,8 +43,8 @@ def noise_info(input_size):
     summary(model, input_size=input_size)
 
 def main():
-    # encoder_info(encoder_input_size1)
-    decoder_info(decoder_input_size1)
+    encoder_info(encoder_input_size1)
+    # decoder_info(decoder_input_size1)
     # disciminator_info(discriminator_input_size)
     # noise_info(noise_input_size)
 
