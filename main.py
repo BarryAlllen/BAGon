@@ -6,9 +6,11 @@ from torch.backends import cudnn
 
 from src.loaders.data_loader import create_dataloaders
 from src.train import Trainer
+from src.utils import check_time
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '6,7'
 
+time = check_time.get_time()
 
 def main(config):
     cudnn.benchmark = True
@@ -22,10 +24,17 @@ def main(config):
     )
 
     engine = Trainer(
+        config=config,
         epochs=config.epochs,
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         seed=config.seed,
+        result_path=config.result_path,
+        time=time,
+        warmup_steps=config.warmup,
+        model_save_step=config.model_save_step,
+        epoch_show_step=config.epoch_show_step,
+        batch_show_step=config.batch_show_step,
         is_scheduler=config.is_scheduler,
         is_parallel=config.is_parallel
     )
@@ -39,13 +48,17 @@ if __name__ == "__main__":
     parser.add_argument("--test_dir", type=str, default="/root/.cache/huggingface/coco/coco/bagon_coco2017_val_1000")
     parser.add_argument("--image_size", type=int, default=128)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--seed", type=int, default=3504)
+    parser.add_argument("--num_workers", type=int, default=56)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--seed", type=int, default=3502)
+    parser.add_argument("--warmup", type=int, default=3)
+    parser.add_argument("--model_save_step", type=int, default=10)
+    parser.add_argument("--epoch_show_step", type=int, default=1)
+    parser.add_argument("--batch_show_step", type=int, default=25)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)
-    parser.add_argument("--model_save_path", type=str, default="data/result/model/model_2.pth")
+    parser.add_argument("-result_path", type=str, default=f"data/result")
 
     config = parser.parse_args()
-    print(config)
+    # print(config)
     main(config)

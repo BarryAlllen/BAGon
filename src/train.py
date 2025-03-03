@@ -1,3 +1,6 @@
+import os
+import sys
+
 import cv2
 import math
 import wandb
@@ -6,6 +9,7 @@ import torch
 import torch.nn as nn
 
 from tqdm import tqdm
+from loguru import logger
 
 from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
@@ -13,20 +17,26 @@ from torch.utils.data import DataLoader
 
 from src.networks.discriminator import Discriminator as Discriminator
 from src.networks.model import BAGon
-from src.utils import check_time
 
 
 class Trainer:
     def __init__(
             self,
+            config: dict,
             epochs: int,
             train_dataloader: DataLoader,
             test_dataloader: DataLoader,
             seed: int,
+            result_path: str,
+            time: str,
+            warmup_steps: int,
+            model_save_step: int,
+            epoch_show_step: int,
+            batch_show_step: int,
             is_scheduler: bool = False,
             is_parallel: bool = False,
-            model_save_path='data/result/model/model.pth'
     ):
+        self.config = config
         self.epochs = epochs
 
         self.seed = seed
@@ -41,28 +51,34 @@ class Trainer:
         self.test_dataloader = test_dataloader
 
         self.is_scheduler = is_scheduler
-        self.warmup_steps = 3
+        self.warmup_steps = warmup_steps
 
         self.alpha = 3
         self.beta = 1
         self.gamma = 0.001
 
+        self.setup_result_path(time=time, path=result_path)
+        self.setup_logger(time=time, path=result_path)
         self.setup_model()
         self.setup_optimizer()
         self.setup_loss_function()
-        self.setup_tools()
+        self.setup_tools(time=time)
 
-        self.model_save_path = model_save_path
-
-        self.model_save_step = 10
-        self.print_for_epoch = 1
-        self.print_for_batch = 25
+        self.model_save_step = model_save_step
+        self.print_for_epoch = epoch_show_step
+        self.print_for_batch = batch_show_step
 
     def setup_model(self):
         self.bagon_net = BAGon().to(self.device)
+        logger.info(f"{self.bagon_net.encoder.name}")
+        logger.info(f"{self.bagon_net.decoder.name}")
         if self.is_parallel:
             self.bagon_net = nn.DataParallel(self.bagon_net)
+
         self.discriminator = Discriminator(hidden_channels=64).to(self.device)
+        logger.info(f"{self.discriminator.name}")
+        if self.is_parallel:
+            self.discriminator = nn.DataParallel(self.discriminator)
 
     def lr_lambda(self, current_step):
         if current_step < self.warmup_steps:
@@ -83,11 +99,11 @@ class Trainer:
         self.bce_loss = nn.BCEWithLogitsLoss()
         self.mse_loss = nn.MSELoss()
 
-    def setup_tools(self):
+    def setup_tools(self, time):
         self.wandb = wandb
         self.wandb.init(
             project="bagon",
-            name=check_time.get_time(),
+            name=time,
             config={
                 "learning_rate": self.lr,
                 "architecture": "U-Net",
@@ -95,6 +111,30 @@ class Trainer:
                 "epochs": self.epochs,
             }
         )
+
+    def setup_result_path(self, time: str, path: str):
+        # model
+        model_file = "model.pth"
+        model_path = os.path.join(path, f"{time}/model")
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        self.model_save_path = os.path.join(model_path, model_file)
+
+        # snapshot
+        self.snapshot_path = os.path.join(path, f"{time}/snapshot")
+        if not os.path.exists(self.snapshot_path):
+            os.makedirs(self.snapshot_path)
+
+    def setup_logger(self, time: str, path: str):
+        logger.remove()
+        log_file = "train.log"
+        log_path = os.path.join(path, f"{time}")
+        logger.add(
+            os.path.join(log_path, log_file),
+            format="<level>{message}</level>"
+        )
+        logger.add(sys.stdout, format="<level>{message}</level>")
+        logger.info(self.config)
 
     def train(self):
 
@@ -114,7 +154,8 @@ class Trainer:
             generator_loss_show = 0.0
             discriminator_fake_loss_show = 0.0
 
-            print(f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr}, lr_discriminator={self.lr_discriminator}")
+            logger.info(
+                f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr}, lr_discriminator={self.lr_discriminator}")
             progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader),
                                 desc="Batch training")
             for batch, (image, edge_mask, depth_mask, message) in progress_bar:
@@ -164,9 +205,9 @@ class Trainer:
 
                 # guide to watermark embedding position
                 mask_loss = (
-                        self.mse_loss(image_encoded * depth_mask.float(), image * depth_mask.float()) * 0.75 +
-                        self.mse_loss(image_encoded * gradient_mask.float(), image * gradient_mask.float()) * 0.5 +
-                        self.mse_loss(image_encoded * edge_mask.float(), image * edge_mask.float()) * 2
+                        self.mse_loss(image_encoded * depth_mask.float(), image * depth_mask.float()) * 2 +
+                        self.mse_loss(image_encoded * edge_mask.float(), image * edge_mask.float()) * 0.75 +
+                        self.mse_loss(image_encoded * gradient_mask.float(), image * gradient_mask.float()) * 0.25
                 )
 
                 loss = (
@@ -188,7 +229,7 @@ class Trainer:
                 discriminator_fake_loss_show += discriminator_fake_loss.item()
 
                 if (batch + 1) % self.print_for_batch == 0:
-                    print(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
+                    logger.info(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
                           f"Loss: {loss_show / self.print_for_batch}, "
                           f"Message Loss: {message_loss_show / self.print_for_batch}, "
                           f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
@@ -241,7 +282,7 @@ class Trainer:
             wrong_correct_bit = 0.0
             correct_bit_total = 0.0
 
-            print('Testing begins...')
+            logger.info('Testing begins...')
             self.bagon_net.eval()
             with torch.inference_mode():
                 for batch, (image_test, message_test) in enumerate(self.test_dataloader):
@@ -255,18 +296,23 @@ class Trainer:
                     correct_bit_total += message_test.shape[0] * message_test.shape[1]
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
-            print(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
+            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
             self.wandb.log({
                 "Correct Rate": test_correct,
             })
 
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
+                directory, filename = os.path.split(self.model_save_path)
+                best_model_save_path = os.path.join(directory, f"best_{filename}")
+                torch.save(self.bagon_net.state_dict(), best_model_save_path)
+                logger.info(f"Best model saved at {best_model_save_path}\n")
 
             test_corrcet_total += test_correct
 
             if (epoch + 1) % self.model_save_step == 0:
                 torch.save(self.bagon_net.state_dict(), self.model_save_path)
+                logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
 
         self.wandb.finish()
 
@@ -304,4 +350,5 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        cv2.imwrite(f'data/result/epoch_batch_image/epoch{epoch + 1}-batch{batch + 1}.png', result)
+        image_snapshot = os.path.join(self.snapshot_path, f"epoch{epoch + 1}-batch{batch + 1}.png")
+        cv2.imwrite(filename=image_snapshot, img=result)
