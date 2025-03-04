@@ -3,7 +3,7 @@ import json
 import requests
 import time
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from loguru import logger
 
 time_format = "%y-%m-%d_%Hh-%Mm-%Ss"  # 25-03-04_15h-00m-01s
@@ -14,8 +14,8 @@ time_format3 = "%I:%M %p"  # 03:01 PM
 
 def get_time(format: str = time_format):
     apis = [
-        suning_time,
         tencen_time,
+        suning_time,
         k780_time
     ]
     for api in apis:
@@ -84,7 +84,10 @@ def tencen_time(format: str):
                 json_str = response_text[len("QZOutputJson="):].rstrip(';')
                 data = json.loads(json_str)
                 timestamp = data['t']
-                return datetime.fromtimestamp(timestamp).strftime(format)
+                time_utc = datetime.utcfromtimestamp(timestamp)
+                local_timezone = timezone(timedelta(hours=8))
+                time = time_utc.replace(tzinfo=timezone.utc).astimezone(local_timezone)
+                return time.strftime(format)
     except Exception as exc:
         logger.error(f"Tencent time error: {exc}")
         return None
@@ -96,23 +99,32 @@ def suning_time(format: str):
         if response.status_code == 200:
             data = response.json()
             timestamp = data['currentTime'] / 1000
-            return datetime.fromtimestamp(timestamp).strftime(format)
+            time_utc = datetime.utcfromtimestamp(timestamp)
+            local_timezone = timezone(timedelta(hours=8))
+            time = time_utc.replace(tzinfo=timezone.utc).astimezone(local_timezone)
+            return time.strftime(format)
     except Exception as exc:
         logger.error(f"Suning time error: {exc}")
         return None
 
 
 # if __name__ == "__main__":
-#     print(get_time(format=time_format))
-#     print(get_time(format=time_format1))
-#     print(get_time(format=time_format2))
-#     print(get_time(format=time_format3))
-    #
-    # test = "25Mar 10_14-46-21"
-    # print(test.replace(" 0", "").replace(" ", ""))
-    #
-    # start_time = "23-10-04_14h-30m-45s"
-    # end_time = "23-10-04_14h-31m-44s"
-    # print(cal_time_diff(start_time, end_time))
-    # time = suning_time(time_format1)
-    # print(time)
+#     # print(get_time(format=time_format))
+#     # print(get_time(format=time_format1))
+#     # print(get_time(format=time_format2))
+#     # print(get_time(format=time_format3))
+#     #
+#     # test = "25Mar 10_14-46-21"
+#     # print(test.replace(" 0", "").replace(" ", ""))
+#     #
+#     # start_time = "23-10-04_14h-30m-45s"
+#     # end_time = "23-10-04_14h-31m-44s"
+#     # print(cal_time_diff(start_time, end_time))
+#     time = k780_time(time_format3)
+#     print(time)
+#
+#     time = tencen_time(time_format3)
+#     print(time)
+#
+#     time = suning_time(time_format3)
+#     print(time)
