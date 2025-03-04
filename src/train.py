@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 
 from src.networks.discriminator import Discriminator as Discriminator
 from src.networks.model import BAGon
+from src.utils import check_time
 
 
 class Trainer:
@@ -136,6 +137,9 @@ class Trainer:
         logger.info(self.config)
 
     def train(self):
+        time_format = "%Y %B %d, %I:%M %p"
+        strat_time = check_time.get_time(format=time_format)
+        logger.info(f"Start time: {strat_time}")
 
         train_loss = 0.0
         decoder_loss = 0.0
@@ -295,7 +299,7 @@ class Trainer:
                     correct_bit_total += message_test.shape[0] * message_test.shape[1]
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
-            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
+            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}% | {check_time.get_time(format='%I:%M %p')}\n")
             self.wandb.log({
                 "Correct Rate": test_correct,
             })
@@ -328,6 +332,11 @@ class Trainer:
                 torch.save(self.discriminator.state_dict(), step_discriminator_save_path)
 
                 logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
+
+        end_time = check_time.get_time(format=time_format)
+        logger.info(f"End time: {end_time}")
+        time_diff = check_time.cal_time_diff(strat_time, end_time, format=time_format)
+        logger.info(f"Training finished, total time: {time_diff}")
 
         self.wandb.finish()
 
