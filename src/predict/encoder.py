@@ -65,17 +65,17 @@ def embedding(
                     message_str = ''.join(map(str, message.astype(int))) if isinstance(message, np.ndarray) else str(message)
                     f.write(f"{output_name} {message_str}\n")
 
-def main():
-    model = model_loader.get_model(
-        params_path='/workspace/code/watermark/bagon/data/result/model/model.pth',
-        device=device
-    )
-    embedding(
-        model=model,
-        data_dir="../../data/test",
-        output_dir='../../data/result/encoded'
-    )
-
-
-if __name__ == '__main__':
-    main()
+# def main():
+#     model = model_loader.get_model(
+#         weights_path='/workspace/code/watermark/bagon/data/result/model/model.pth',
+#         device=device
+#     )
+#     embedding(
+#         model=model,
+#         data_dir="../../data/test",
+#         output_dir='../../data/result/encoded'
+#     )
+#
+#
+# if __name__ == '__main__':
+#     main()

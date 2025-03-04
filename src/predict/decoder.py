@@ -76,17 +76,17 @@ def extracting(
     return correct_rate, encoded_messages_mapping, decoded_messages_mapping
 
 
-def main():
-    model = model_loader.get_model(
-        params_path='/workspace/code/watermark/bagon/data/result/model/model.pth',
-        device=device
-    )
-    extracting(
-        model=model,
-        encoded_dir="../../data/result/encoded",
-        encoded_mapping_file_name="encoded_message_mapping.txt"
-    )
-
-
-if __name__ == '__main__':
-    main()
+# def main():
+#     model = model_loader.get_model(
+#         weights_path='/workspace/code/watermark/bagon/data/result/model/model.pth',
+#         device=device
+#     )
+#     extracting(
+#         model=model,
+#         encoded_dir="../../data/result/encoded",
+#         encoded_mapping_file_name="encoded_message_mapping.txt"
+#     )
+#
+#
+# if __name__ == '__main__':
+#     main()
