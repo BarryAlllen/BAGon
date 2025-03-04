@@ -6,11 +6,9 @@ from torch.backends import cudnn
 
 from src.loaders.data_loader import create_dataloaders
 from src.train import Trainer
-from src.utils import check_time
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '6,7'
 
-time = check_time.get_time()
 
 def main(config):
     cudnn.benchmark = True
@@ -30,7 +28,6 @@ def main(config):
         test_dataloader=test_dataloader,
         seed=config.seed,
         result_path=config.result_path,
-        time=time,
         warmup_steps=config.warmup,
         model_save_step=config.model_save_step,
         epoch_show_step=config.epoch_show_step,
@@ -60,5 +57,4 @@ if __name__ == "__main__":
     parser.add_argument("-result_path", type=str, default=f"data/result")
 
     config = parser.parse_args()
-    # print(config)
     main(config)
