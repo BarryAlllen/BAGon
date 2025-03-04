@@ -242,16 +242,6 @@ class Trainer:
                           f"Generator Loss: {generator_loss_show / self.print_for_batch:.4f}, "
                           f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch:.4f}")
 
-                    # if self.is_wandb:
-                    #     self.wandb.log({
-                    #         "Loss": loss_show / self.print_for_batch,
-                    #         "Message Loss": message_loss_show / self.print_for_batch,
-                    #         "Mask Loss": mask_loss_show / self.print_for_batch,
-                    #         "Generator Loss": generator_loss_show / self.print_for_batch,
-                    #         "Discriminator Fake Loss": discriminator_fake_loss_show / self.print_for_batch,
-                    #         "lr": self.lr
-                    #     },step=batch)
-
                     loss_show = 0.0
                     message_loss_show = 0.0
                     mask_loss_show = 0.0
