@@ -171,20 +171,13 @@ class Trainer:
                 message_loss = self.mse_loss(message_decoded, message)
 
                 # get gradient mask
-                # image_grad = torch.autograd.grad(message_loss, image, create_graph=True)[0]
-                # gradient_mask = torch.zeros(image_grad.shape, device=self.device)
-                #
-                # for i in range(image_grad.shape[0]):
-                #     a = image_grad[i, :, :, :]
-                #     a = (1 - (a - a.min()) / (a.max() - a.min())) + 1
-                #     gradient_mask[i, :, :, :] = a.detach()
+                image_grad = torch.autograd.grad(message_loss, image, create_graph=True)[0]
+                gradient_mask = torch.zeros(image_grad.shape, device=self.device)
 
-                # get gradient mask v2
-                image_grad = torch.autograd.grad(message_loss, image, create_graph=False)[0]
-                a = image_grad
-                a_normalized = 1 - (a - a.min(dim=1, keepdim=True)[0]) / (
-                            a.max(dim=1, keepdim=True)[0] - a.min(dim=1, keepdim=True)[0] + 1e-6)
-                gradient_mask = a_normalized.detach() + 1
+                for i in range(image_grad.shape[0]):
+                    a = image_grad[i, :, :, :]
+                    a = (1 - (a - a.min()) / (a.max() - a.min())) + 1
+                    gradient_mask[i, :, :, :] = a.detach()
 
                 # train discriminator
                 real_labels = torch.full((image.shape[0], 1), 1, dtype=torch.float, device=self.device)
