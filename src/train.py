@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 
 from src.networks.discriminator import Discriminator as Discriminator
 from src.networks.model import BAGon
-from src.utils import check_time
+from src.utils import check_time as ct
 
 
 class Trainer:
@@ -29,7 +29,6 @@ class Trainer:
             test_dataloader: DataLoader,
             seed: int,
             result_path: str,
-            time: str,
             warmup_steps: int,
             model_save_step: int,
             epoch_show_step: int,
@@ -57,6 +56,8 @@ class Trainer:
         self.alpha = 3
         self.beta = 1
         self.gamma = 0.001
+
+        time = ct.get_main_time()
 
         self.setup_result_path(time=time, path=result_path)
         self.setup_logger(time=time, path=result_path)
@@ -137,9 +138,8 @@ class Trainer:
         logger.info(self.config)
 
     def train(self):
-        time_format = "%Y %B %d, %I:%M %p"
-        strat_time = check_time.get_time(format=time_format)
-        logger.info(f"Start time: {strat_time}")
+        start_time = ct.get_time()  # record start time
+        logger.info(f"Start time: {ct.get_time(format=ct.time_format1)}")
 
         train_loss = 0.0
         decoder_loss = 0.0
@@ -299,7 +299,7 @@ class Trainer:
                     correct_bit_total += message_test.shape[0] * message_test.shape[1]
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
-            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}% | {check_time.get_time(format='%I:%M %p')}\n")
+            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}% | {ct.get_time(format=ct.time_format3)}\n")
             self.wandb.log({
                 "Correct Rate": test_correct,
             })
@@ -333,9 +333,9 @@ class Trainer:
 
                 logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
 
-        end_time = check_time.get_time(format=time_format)
-        logger.info(f"End time: {end_time}")
-        time_diff = check_time.cal_time_diff(strat_time, end_time, format=time_format)
+        end_time = ct.get_time()  # record end time
+        logger.info(f"End time: {ct.get_time(format=ct.time_format1)}")
+        time_diff = ct.cal_time_diff(start_time, end_time)
         logger.info(f"Training finished, total time: {time_diff}")
 
         self.wandb.finish()
@@ -374,5 +374,5 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        image_snapshot = os.path.join(self.snapshot_path, f"epoch{epoch + 1}-batch{batch + 1}.png")
+        image_snapshot = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}.png")
         cv2.imwrite(filename=image_snapshot, img=result)
