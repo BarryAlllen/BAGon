@@ -114,11 +114,10 @@ class Trainer:
 
     def setup_result_path(self, time: str, path: str):
         # model
-        model_file = "model.pth"
         model_path = os.path.join(path, f"{time}/model")
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        self.model_save_path = os.path.join(model_path, model_file)
+        self.model_save_path = model_path
 
         # snapshot
         self.snapshot_path = os.path.join(path, f"{time}/snapshot")
@@ -301,17 +300,33 @@ class Trainer:
                 "Correct Rate": test_correct,
             })
 
+            # save best model weights
+            filename = "model.pth" # model base name
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
-                directory, filename = os.path.split(self.model_save_path)
-                best_model_save_path = os.path.join(directory, f"best_{filename}")
+
+                # save best encoder & decoder
+                best_model_save_path = os.path.join(self.model_save_path, f"best_{filename}")
                 torch.save(self.bagon_net.state_dict(), best_model_save_path)
-                logger.info(f"Best model saved at {best_model_save_path}\n")
+
+                # save best discriminator
+                best_discriminator_save_path = os.path.join(self.model_save_path, f"best_discriminator_{filename}")
+                torch.save(self.discriminator.state_dict(), best_discriminator_save_path)
+
+                logger.info(f"Best model saved at {self.model_save_path}\n")
 
             test_corrcet_total += test_correct
 
+            # save model weights
             if (epoch + 1) % self.model_save_step == 0:
-                torch.save(self.bagon_net.state_dict(), self.model_save_path)
+                # save encoder & decoder
+                step_model_save_path = os.path.join(self.model_save_path, filename)
+                torch.save(self.bagon_net.state_dict(), step_model_save_path)
+
+                # save discriminator
+                step_discriminator_save_path = os.path.join(self.model_save_path, f"discriminator_{filename}")
+                torch.save(self.discriminator.state_dict(), step_discriminator_save_path)
+
                 logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
 
         self.wandb.finish()
