@@ -32,6 +32,7 @@ def extracting(
         image_size=128
     )
 
+    # image decoding
     decoded_messages_mapping = {}
     with torch.inference_mode():
         for batch, (images, image_paths, _) in tqdm(enumerate(data_loader), desc="Decoding",
@@ -49,6 +50,7 @@ def extracting(
                 image_name = image_paths[i]
                 decoded_messages_mapping[image_name] = messages_decoded[i]
 
+    # read the originally embedded message recorded in the file.
     encoded_messages_mapping = {}
     encoded_mapping_file_path = os.path.join(encoded_dir, encoded_mapping_file_name)
     with open(encoded_mapping_file_path, 'r') as f:
@@ -57,13 +59,17 @@ def extracting(
             message = np.array([int(bit) for bit in message_str])
             encoded_messages_mapping[filename] = message.astype(np.int32)
 
+    # determine if decoded info length matches embedded info length
     assert len(decoded_messages_mapping) == len(encoded_messages_mapping)
 
+    # calculate the accuracy rate
     total_bit = 0
     total_wrong_bit = 0
     for key in decoded_messages_mapping:
         encoded_message = encoded_messages_mapping[key]
         decoded_message = decoded_messages_mapping[key]
+        # print(f"encoded: {encoded_message}")
+        # print(f"decoded: {decoded_message}\n")
 
         wrong_bit = np.sum(np.abs(encoded_message - decoded_message))
         total_wrong_bit += wrong_bit

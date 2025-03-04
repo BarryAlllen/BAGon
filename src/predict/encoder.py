@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import cv2
 import numpy as np
@@ -37,6 +38,23 @@ def embedding(
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+
+    if os.path.exists(output_dir) and os.listdir(output_dir):
+        user_input = input(f"The directory '{output_dir}' is not empty. Do you want to clear it? (y/n): ").strip().lower()
+        if user_input == 'y':
+            for filename in os.listdir(output_dir):
+                file_path = os.path.join(output_dir, filename)
+                try:
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    print(f'Failed to delete {file_path}. Reason: {e}')
+            print(f"Directory '{output_dir}' has been cleared.")
+        else:
+            print("Operation cancelled by user.")
+            return
 
     mapping_path = os.path.join(output_dir, mapping_file_name)
 

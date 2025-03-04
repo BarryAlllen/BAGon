@@ -6,7 +6,7 @@ import argparse
 from src.predict import encoder, decoder
 from src.utils import model_loader
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -55,15 +55,15 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_params_path", type=str, default="/workspace/code/watermark/bagon/data/result/model/model.pth")
+    parser.add_argument("--model_params_path", type=str, default="/workspace/code/watermark/bagon/data/result/benchmark/model/best_model.pth")
     parser.add_argument("--data_dir", type=str, default="../../data/test")
-    parser.add_argument("--batch_size", type=int, default=2)
-    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--num_workers", type=int, default=56)
     parser.add_argument("--is_noise", type=bool, default=False)
-    parser.add_argument("--encode_output", type=str, default="../../data/result/encoded_noise")
+    parser.add_argument("--encode_output", type=str, default="../../data/result/encoded")
     parser.add_argument("--message_matrix_path", type=str, default="../utils/test_matrix.npy")
     parser.add_argument("--mapping_file_name", type=str, default="encoded_mapping.txt")
-    parser.add_argument("--mode", type=str, default="d", choices=['e', 'd', 'ed'], help="Choose a mode: 'e', 'd', or 'ed'")
+    parser.add_argument("--mode", type=str, default="ed", choices=['e', 'd', 'ed'], help="Choose a mode: 'e', 'd', or 'ed'")
 
     config = parser.parse_args()
     print(config)
