@@ -65,6 +65,7 @@ def embedding(
                     message_str = ''.join(map(str, message.astype(int))) if isinstance(message, np.ndarray) else str(message)
                     f.write(f"{output_name} {message_str}\n")
 
+
 # def main():
 #     model = model_loader.get_model(
 #         weights_path='/workspace/code/watermark/bagon/data/result/model/model.pth',
