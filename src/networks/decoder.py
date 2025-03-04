@@ -42,7 +42,8 @@ class Extractor(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, in_channels=3):
         super().__init__()
-        self.name = "Model: Decoder"
+        self.name = f"Model: {self.__class__.__name__}"
+
         self.layer1 = nn.Sequential(
             ConvBatchNormReluBlock(in_channels, 64, 3, 1),
             ConvBatchNormReluBlock(64, 64, 3, 1),
@@ -99,7 +100,8 @@ class ExtractorV2(nn.Module):
 class DecoderV2(nn.Module):
     def __init__(self, in_channels=3, hidden_channels=64):
         super().__init__()
-        self.name = "Model: DecoderV2"
+        self.name = f"Model: {self.__class__.__name__}"
+
         self.layer1 = nn.Sequential(
             ConvBatchNormReluBlock(in_channels=in_channels, out_channels=hidden_channels, kernel_size=3, stride=1),
             ConvBatchNormReluBlock(in_channels=hidden_channels, out_channels=hidden_channels, kernel_size=3, stride=1),

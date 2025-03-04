@@ -224,6 +224,7 @@ def Moire_Distortion(embed_image):
 class ScreenShootingNoiseLayer(nn.Module):
     def __init__(self):
         super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
 
     def forward(self, embed_image):
         noised_image = torch.zeros_like(embed_image)
@@ -251,6 +252,7 @@ class ScreenShootingNoiseLayer(nn.Module):
 class NoneNoiseLayer(nn.Module):
     def __init__(self):
         super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
 
     def forward(self, embed_image):
         output = embed_image
