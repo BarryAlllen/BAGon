@@ -38,7 +38,7 @@ def run_decoder(config, model):
 
 def main(config):
     model = model_loader.get_model(
-        params_path=config.model_params_path,
+        weights_path=config.model_params_path,
         device=device
     )
 
