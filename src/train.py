@@ -33,6 +33,7 @@ class Trainer:
             model_save_step: int,
             epoch_show_step: int,
             batch_show_step: int,
+            is_wandb: bool,
             is_scheduler: bool = False,
             is_parallel: bool = False,
     ):
@@ -64,6 +65,7 @@ class Trainer:
         self.setup_model()
         self.setup_optimizer()
         self.setup_loss_function()
+        self.is_wandb = is_wandb
         self.setup_tools(time=time)
 
         self.model_save_step = model_save_step
@@ -102,17 +104,18 @@ class Trainer:
         self.mse_loss = nn.MSELoss()
 
     def setup_tools(self, time):
-        self.wandb = wandb
-        self.wandb.init(
-            project="bagon",
-            name=time,
-            config={
-                "learning_rate": self.lr,
-                "architecture": "U-Net",
-                "dataset": "COCO",
-                "epochs": self.epochs,
-            }
-        )
+        if self.is_wandb:
+            self.wandb = wandb
+            self.wandb.init(
+                project="bagon",
+                name=time,
+                config={
+                    "learning_rate": self.lr,
+                    "architecture": "U-Net",
+                    "dataset": "COCO",
+                    "epochs": self.epochs,
+                }
+            )
 
     def setup_result_path(self, time: str, path: str):
         # model
@@ -239,14 +242,15 @@ class Trainer:
                           f"Generator Loss: {generator_loss_show / self.print_for_batch:.4f}, "
                           f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch:.4f}")
 
-                    # self.wandb.log({
-                    #     "Loss": loss_show / self.print_for_batch,
-                    #     "Message Loss": message_loss_show / self.print_for_batch,
-                    #     "Mask Loss": mask_loss_show / self.print_for_batch,
-                    #     "Generator Loss": generator_loss_show / self.print_for_batch,
-                    #     "Discriminator Fake Loss": discriminator_fake_loss_show / self.print_for_batch,
-                    #     "lr": self.lr
-                    # },step=batch)
+                    # if self.is_wandb:
+                    #     self.wandb.log({
+                    #         "Loss": loss_show / self.print_for_batch,
+                    #         "Message Loss": message_loss_show / self.print_for_batch,
+                    #         "Mask Loss": mask_loss_show / self.print_for_batch,
+                    #         "Generator Loss": generator_loss_show / self.print_for_batch,
+                    #         "Discriminator Fake Loss": discriminator_fake_loss_show / self.print_for_batch,
+                    #         "lr": self.lr
+                    #     },step=batch)
 
                     loss_show = 0.0
                     message_loss_show = 0.0
@@ -262,15 +266,15 @@ class Trainer:
                 guide_mask_loss += mask_loss.item()
                 gen_loss += generator_loss.item()
                 dis_loss += discriminator_fake_loss.item()
-
-            self.wandb.log({
-                "Train Loss": train_loss / len(self.train_dataloader),
-                "Decoder Loss": decoder_loss / len(self.train_dataloader),
-                "Guide Mask Loss": guide_mask_loss / len(self.train_dataloader),
-                "Generator Loss": gen_loss / len(self.train_dataloader),
-                "Discriminator Fake Loss": dis_loss / len(self.train_dataloader),
-                "lr": self.lr
-            })
+            if self.is_wandb:
+                self.wandb.log({
+                    "Train Loss": train_loss / len(self.train_dataloader),
+                    "Decoder Loss": decoder_loss / len(self.train_dataloader),
+                    "Guide Mask Loss": guide_mask_loss / len(self.train_dataloader),
+                    "Generator Loss": gen_loss / len(self.train_dataloader),
+                    "Discriminator Fake Loss": dis_loss / len(self.train_dataloader),
+                    "lr": self.lr
+                })
 
             train_loss = 0.0
             decoder_loss = 0.0
@@ -300,9 +304,10 @@ class Trainer:
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
             logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}% | {ct.get_time(format=ct.time_format3)}\n")
-            self.wandb.log({
-                "Correct Rate": test_correct,
-            })
+            if self.is_wandb:
+                self.wandb.log({
+                    "Correct Rate": test_correct,
+                })
 
             # save best model weights
             filename = "model.pth" # model base name
@@ -338,7 +343,8 @@ class Trainer:
         time_diff = ct.cal_time_diff(start_time, end_time)
         logger.info(f"Training finished, total time: {time_diff}")
 
-        self.wandb.finish()
+        if self.is_wandb:
+            self.wandb.finish()
 
     def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask,
                             epoch, batch):

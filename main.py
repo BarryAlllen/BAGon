@@ -32,6 +32,7 @@ def main(config):
         model_save_step=config.model_save_step,
         epoch_show_step=config.epoch_show_step,
         batch_show_step=config.batch_show_step,
+        is_wandb=config.is_wandb,
         is_scheduler=config.is_scheduler,
         is_parallel=config.is_parallel
     )
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_save_step", type=int, default=10)
     parser.add_argument("--epoch_show_step", type=int, default=1)
     parser.add_argument("--batch_show_step", type=int, default=25)
+    parser.add_argument("--is_wandb", type=bool, default=True)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)
     parser.add_argument("-result_path", type=str, default=f"data/result")
