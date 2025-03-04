@@ -7,9 +7,9 @@ from datetime import datetime, timezone, timedelta
 from loguru import logger
 
 time_format = "%y-%m-%d_%Hh-%Mm-%Ss"  # 25-03-04_15h-00m-01s
-time_format1 = "%Y %B %d, %I:%M %p"  # 2025 March 04, 03:02 PM
-time_format2 = "%y%b %d_%H-%M-%S"  # 25Mar 04_15-00-02  " 0" will be replaced
-time_format3 = "%I:%M %p"  # 03:01 PM
+time_format1 = "%Y %B %d, %H:%M"  # 2025 March 04, 15:02
+time_format2 = "%y%b %d_%Hh%Mm%Ss"  # 25Mar 04_15h00m02s  " 0" will be replaced
+time_format3 = "%H:%M"  # 15:02
 
 
 def get_time(format: str = time_format):
