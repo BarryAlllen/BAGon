@@ -158,7 +158,7 @@ class Trainer:
             discriminator_fake_loss_show = 0.0
 
             logger.info(
-                f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr}, lr_discriminator={self.lr_discriminator}")
+                f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr:.10f}, lr_discriminator={self.lr_discriminator:.10f}")
             progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader),
                                 desc="Batch training")
             for batch, (image, edge_mask, depth_mask, message) in progress_bar:
@@ -233,11 +233,11 @@ class Trainer:
 
                 if (batch + 1) % self.print_for_batch == 0:
                     logger.info(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
-                          f"Loss: {loss_show / self.print_for_batch}, "
-                          f"Message Loss: {message_loss_show / self.print_for_batch}, "
-                          f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
-                          f"Generator Loss: {generator_loss_show / self.print_for_batch}, "
-                          f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch}")
+                          f"Loss: {loss_show / self.print_for_batch:.4f}, "
+                          f"Message Loss: {message_loss_show / self.print_for_batch:.4f}, "
+                          f"Mask Loss: {mask_loss_show / self.print_for_batch:.4f}, "
+                          f"Generator Loss: {generator_loss_show / self.print_for_batch:.4f}, "
+                          f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch:.4f}")
 
                     # self.wandb.log({
                     #     "Loss": loss_show / self.print_for_batch,
