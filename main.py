@@ -58,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("--is_wandb", type=bool, default=True)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)
-    parser.add_argument("-result_path", type=str, default=f"data/result")
+    parser.add_argument("--result_path", type=str, default=f"data/result")
 
     config = parser.parse_args()
     main(config)
