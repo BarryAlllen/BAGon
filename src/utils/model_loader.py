@@ -37,7 +37,7 @@ def load_weights(model: nn.Module, weights_path: str, device):
 # def main():
 #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #     model = get_model(
-#         weights_path='/workspace/code/watermark/bagon/data/result/benchmark/model/model.pth',
+#         weights_path='/workspace/code/watermark/bagon/data/result/25-03-03_18h-03m-12s/model/model.pth',
 #         device=device
 #     )
 #     print(type(model))
