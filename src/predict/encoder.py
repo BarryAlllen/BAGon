@@ -18,6 +18,7 @@ def embedding(
         model: BAGon,
         data_dir: str,
         output_dir: str,
+        clean_dir: bool,
         image_size: int = 128,
         batch_size: int = 2,
         num_workers: int = 1,
@@ -40,7 +41,9 @@ def embedding(
         os.makedirs(output_dir)
 
     if os.path.exists(output_dir) and os.listdir(output_dir):
-        user_input = input(f"The directory '{output_dir}' is not empty. Do you want to clear it? (y/n): ").strip().lower()
+        user_input = 'y'
+        if not clean_dir:
+            user_input = input(f"The directory '{output_dir}' is not empty. Do you want to clear it? (y/n): ").strip().lower()
         if user_input == 'y':
             for filename in os.listdir(output_dir):
                 file_path = os.path.join(output_dir, filename)
