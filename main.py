@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_save_step", type=int, default=10)
     parser.add_argument("--epoch_show_step", type=int, default=1)
     parser.add_argument("--batch_show_step", type=int, default=25)
-    parser.add_argument("--checkpoint_list", type=int, nargs='+', default=[50, 60, 70, 80])
+    parser.add_argument("--checkpoint_list", type=int, nargs='+', default=[55, 65, 75, 85])
     parser.add_argument("--is_wandb", type=bool, default=True)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)
