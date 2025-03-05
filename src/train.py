@@ -33,6 +33,7 @@ class Trainer:
             model_save_step: int,
             epoch_show_step: int,
             batch_show_step: int,
+            checkpoint_list: list,
             is_wandb: bool,
             is_scheduler: bool = False,
             is_parallel: bool = False,
@@ -68,6 +69,7 @@ class Trainer:
         self.is_wandb = is_wandb
         self.setup_tools(time=time)
 
+        self.checkpoint_list = checkpoint_list
         self.model_save_step = model_save_step
         self.print_for_epoch = epoch_show_step
         self.print_for_batch = batch_show_step
@@ -300,33 +302,53 @@ class Trainer:
                 })
 
             # save best model weights
-            filename = "model.pth" # model base name
+            model_name = "model.pth" # model base name
+            discriminator_name = "discriminator.pth" # discriminator base name
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
 
+                best_path = os.path.join(self.model_save_path, "best")
+                if not os.path.exists(best_path):
+                    os.mkdir(best_path)
+
                 # save best encoder & decoder
-                best_model_save_path = os.path.join(self.model_save_path, f"best_{filename}")
+                best_model_save_path = os.path.join(best_path, f"best_{model_name}")
                 torch.save(self.bagon_net.state_dict(), best_model_save_path)
 
                 # save best discriminator
-                best_discriminator_save_path = os.path.join(self.model_save_path, f"best_discriminator_{filename}")
+                best_discriminator_save_path = os.path.join(best_path, f"best_{discriminator_name}")
                 torch.save(self.discriminator.state_dict(), best_discriminator_save_path)
 
-                logger.info(f"Best model saved at {self.model_save_path}\n")
+                logger.info(f"Best model saved at {best_path}\n")
 
             test_corrcet_total += test_correct
 
             # save model weights
             if (epoch + 1) % self.model_save_step == 0:
                 # save encoder & decoder
-                step_model_save_path = os.path.join(self.model_save_path, filename)
+                step_model_save_path = os.path.join(self.model_save_path, model_name)
                 torch.save(self.bagon_net.state_dict(), step_model_save_path)
 
                 # save discriminator
-                step_discriminator_save_path = os.path.join(self.model_save_path, f"discriminator_{filename}")
+                step_discriminator_save_path = os.path.join(self.model_save_path, f"{discriminator_name}")
                 torch.save(self.discriminator.state_dict(), step_discriminator_save_path)
 
                 logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
+
+            # save checkpoint weights
+            if (epoch + 1) in self.checkpoint_list:
+                checkpoint_path = os.path.join(self.model_save_path, f"checkpoint_{(epoch + 1)}")
+                if not os.path.exists(checkpoint_path):
+                    os.mkdir(checkpoint_path)
+
+                # save encoder & decoder
+                checkpoint_model_save_path = os.path.join(checkpoint_path, f"{model_name}")
+                torch.save(self.bagon_net.state_dict(), checkpoint_model_save_path)
+
+                # save discriminator
+                checkpoint_discriminator_save_path = os.path.join(checkpoint_path, f"{discriminator_name}")
+                torch.save(self.discriminator.state_dict(), checkpoint_discriminator_save_path)
+
 
         end_time = ct.get_time()  # record end time
         logger.info(f"End time: {ct.get_time(format=ct.time_format1)}")
