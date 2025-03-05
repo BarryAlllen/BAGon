@@ -7,7 +7,7 @@ from torch.backends import cudnn
 from src.loaders.data_loader import create_dataloaders
 from src.train import Trainer
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '4,5'
 
 
 def main(config):
