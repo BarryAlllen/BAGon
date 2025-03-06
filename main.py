@@ -7,7 +7,7 @@ from torch.backends import cudnn
 from src.loaders.data_loader import create_dataloaders
 from src.train import Trainer
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6,7'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
 
 
 def main(config):
@@ -54,11 +54,12 @@ if __name__ == "__main__":
     parser.add_argument("--model_save_step", type=int, default=10)
     parser.add_argument("--epoch_show_step", type=int, default=1)
     parser.add_argument("--batch_show_step", type=int, default=25)
-    parser.add_argument("--checkpoint_list", type=int, nargs='+', default=[55, 65, 75, 85])
+    parser.add_argument("--checkpoint_list", type=int, nargs='+', default=[55, 65, 75, 85, 95])
     parser.add_argument("--is_wandb", type=bool, default=True)
     parser.add_argument("--is_scheduler", type=bool, default=True)
     parser.add_argument("--is_parallel", type=bool, default=True)
     parser.add_argument("--result_path", type=str, default=f"data/result")
+    parser.add_argument("--name", type=str, default=f"barry")
 
     config = parser.parse_args()
     main(config)
