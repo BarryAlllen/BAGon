@@ -73,8 +73,8 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    path_name = "25Mar7_16h51m16s"
-    parser.add_argument("--model_params_path", type=str, default=f"/workspace/code/watermark/bagon/data/result/{path_name}/model/best/best_model.pth")
+    path_name = "25Mar10_15h18m51s"
+    parser.add_argument("--model_params_path", type=str, default=f"/workspace/code/watermark/bagon/data/result/{path_name}/model/model.pth")
     parser.add_argument("--data_dir", type=str, default="../../data/result/benchmark/image")
     parser.add_argument("--image_size", type=int, default=128)
     parser.add_argument("--batch_size", type=int, default=4)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument("--encode_output", type=str, default="../../data/result/benchmark/encoded")
     parser.add_argument("--message_matrix_path", type=str, default="../utils/test_matrix.npy")
     parser.add_argument("--mapping_file_name", type=str, default="encoded_mapping.txt")
-    parser.add_argument("--mode", type=str, default="i", choices=['e', 'd', 'ed', 'i'], help="Choose a mode: 'e', 'd', or 'ed'")
+    parser.add_argument("--mode", type=str, default="d", choices=['e', 'd', 'ed', 'i'], help="Choose a mode: 'e', 'd', or 'ed'")
 
     config = parser.parse_args()
     print(config)
