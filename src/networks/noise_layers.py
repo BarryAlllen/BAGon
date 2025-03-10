@@ -9,6 +9,7 @@ import torch.nn as nn
 
 from kornia.geometry.transform import get_perspective_transform
 from kornia.geometry.transform import warp_perspective
+from src.utils.jpg_compression import JpegCompression
 
 
 def _compute_translation_matrix(translation: torch.Tensor) -> torch.Tensor:
@@ -221,14 +222,21 @@ def Moire_Distortion(embed_image):
     return Z
 
 
+def jpg_compress(image, device):
+    jpg_layer = JpegCompression(device, yuv_keep_weights=(25, 9, 9))
+    return jpg_layer(image)
+
+
 class ScreenShootingNoiseLayer(nn.Module):
     def __init__(self):
         super().__init__()
         self.name = f"Model: {self.__class__.__name__}"
 
     def forward(self, embed_image):
-        noised_image = torch.zeros_like(embed_image)
         device = embed_image.device
+
+        # jpg
+        embed_image = jpg_compress(embed_image, device)
 
         # perspective transform
         noised_image = perspective(embed_image, device, 2)
