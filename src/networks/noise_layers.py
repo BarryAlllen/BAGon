@@ -235,7 +235,7 @@ class ScreenShootingNoiseLayer(nn.Module):
     def forward(self, embed_image):
         device = embed_image.device
 
-        # jpg
+        # jpg compression
         embed_image = jpg_compress(embed_image, device)
 
         # perspective transform
