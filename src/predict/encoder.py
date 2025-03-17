@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from src.networks.model import BAGon
 from src.predict.loader import create_dataloaders
-from src.utils import model_loader
+from skimage.metrics import peak_signal_noise_ratio as psnr
+from skimage.metrics import structural_similarity as ssim
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -61,6 +62,9 @@ def embedding(
 
     mapping_path = os.path.join(output_dir, mapping_file_name)
 
+    psnr_list = []
+    ssim_list = []
+
     with open(mapping_path, 'w') as f:
         with torch.inference_mode():
             for batch, (images, image_paths, messages) in tqdm(enumerate(data_loader), desc="Encoding",
@@ -85,6 +89,34 @@ def embedding(
                     message = messages[i].cpu().numpy() if isinstance(messages[i], torch.Tensor) else messages[i]
                     message_str = ''.join(map(str, message.astype(int))) if isinstance(message, np.ndarray) else str(message)
                     f.write(f"{output_name} {message_str}\n")
+
+                    original_path = os.path.join(data_dir, image_paths[i])
+                    encoded_path = output
+                    psnr_value, ssim_value = calculate_psnr_ssim(original_path, encoded_path)
+                    psnr_list.append(psnr_value)
+                    ssim_list.append(ssim_value)
+
+    avg_psnr = np.mean(psnr_list)
+    avg_ssim = np.mean(ssim_list)
+    print(f"PSNR: {avg_psnr:.4f} dB")
+    print(f"SSIM: {avg_ssim:.4f}")
+
+
+def calculate_psnr_ssim(original_path, encoded_path):
+    original = cv2.imread(original_path, cv2.IMREAD_COLOR)
+    encoded = cv2.imread(encoded_path, cv2.IMREAD_COLOR)
+
+    encoded_height, encoded_width = encoded.shape[:2]
+
+    original = cv2.resize(original, (encoded_width, encoded_height))
+
+    min_dim = min(original.shape[:2])
+    win_size = min_dim if min_dim % 2 == 1 else min_dim - 1
+
+    psnr_value = psnr(original, encoded, data_range=255)
+    ssim_value = ssim(original, encoded, data_range=255, channel_axis=2, win_size=win_size)
+
+    return psnr_value, ssim_value
 
 
 # def main():
