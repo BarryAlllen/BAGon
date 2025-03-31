@@ -1,4 +1,3 @@
-
 import os
 import cv2
 import numpy as np
@@ -7,6 +6,7 @@ from typing import Optional
 
 from torch.utils.data import Dataset
 from torchvision import transforms
+
 
 class TrainDataset(Dataset):
     def __init__(self, directory: str, image_size: int, transform: Optional[transforms.Compose] = None):
@@ -35,13 +35,13 @@ class TrainDataset(Dataset):
         image_origin = image_origin.transpose((2, 0, 1))
         image_origin = np.float32(image_origin / 255.0 * 2 - 1)
 
-        edge_mask = image[:, size:size * 2, :]
-        edge_mask = np.float32(edge_mask) / 255.0
-        edge_mask = (edge_mask.transpose((2, 0, 1)) + 1) * 3
-
-        depth_mask = image[:, size * 2:, :]
+        depth_mask = image[:, size:size * 2, :]
         depth_mask = np.float32(depth_mask) / 255.0
         depth_mask = (depth_mask.transpose((2, 0, 1)) + 1) * 3
+
+        edge_mask = image[:, size * 2:, :]
+        edge_mask = np.float32(edge_mask) / 255.0
+        edge_mask = (edge_mask.transpose((2, 0, 1)) + 1) * 3
 
         message = np.random.rand(30)
         message = np.round(message)
@@ -50,7 +50,8 @@ class TrainDataset(Dataset):
 
 
 class TestDataset(Dataset):
-    def __init__(self, directory: str, image_size: int, message_matrix_path: str, transform: Optional[transforms.Compose] = None):
+    def __init__(self, directory: str, image_size: int, message_matrix_path: str,
+                 transform: Optional[transforms.Compose] = None):
         super().__init__()
         self.directory = directory
         self.paths = [f for f in os.listdir(directory) if f.lower().endswith(('.jpg', '.png'))]
