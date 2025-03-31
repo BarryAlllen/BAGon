@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 
 from src.networks.discriminator import Discriminator as Discriminator
 from src.networks.model import BAGon
-from src.utils import check_time as ct
+from src.utils import check_time as ct, model_loader
 
 
 class Trainer:
@@ -37,6 +37,9 @@ class Trainer:
             is_wandb: bool,
             is_scheduler: bool = False,
             is_parallel: bool = False,
+            is_weights: bool = False,
+            weights_path: str = "",
+            weights_path_discriminator: str = "",
     ):
         self.config = config
         self.epochs = epochs
@@ -47,6 +50,9 @@ class Trainer:
         torch.cuda.manual_seed_all(self.seed)
 
         self.is_parallel = is_parallel
+        self.is_weights = is_weights
+        self.weights_path = weights_path
+        self.weights_path_discriminator = weights_path_discriminator
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.train_dataloader = train_dataloader
@@ -76,12 +82,16 @@ class Trainer:
 
     def setup_model(self):
         self.bagon_net = BAGon().to(self.device)
+        if self.is_weights:
+            self.bagon_net = model_loader.get_model(weights_path=self.weights_path, device=self.device)
         logger.info(f"{self.bagon_net.encoder.name}")
         logger.info(f"{self.bagon_net.decoder.name}")
         if self.is_parallel:
             self.bagon_net = nn.DataParallel(self.bagon_net)
 
         self.discriminator = Discriminator(hidden_channels=64).to(self.device)
+        if self.is_weights:
+            self.discriminator = model_loader.get_discriminator(weights_path=self.weights_path_discriminator, device=self.device)
         logger.info(f"{self.discriminator.name}")
         if self.is_parallel:
             self.discriminator = nn.DataParallel(self.discriminator)
@@ -218,11 +228,17 @@ class Trainer:
                         self.mse_loss(image_encoded * gradient_mask.float(), image * gradient_mask.float()) * 0.25
                 )
 
+                # loss = (
+                #         message_loss * self.alpha +
+                #         mask_loss * self.beta +
+                #         generator_loss * self.gamma
+                # )
+
                 loss = (
-                        message_loss * self.alpha +
-                        mask_loss * self.beta +
-                        generator_loss * self.gamma
+                        message_loss * 3 +
+                        generator_loss * 1
                 )
+
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -394,3 +410,12 @@ class Trainer:
 
         image_snapshot = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}.png")
         cv2.imwrite(filename=image_snapshot, img=result)
+
+        # image_snapshot_gradient = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}_gradient.png")
+        # img_gradient_mask = cv2.resize(img_gradient_mask, (640, 640), interpolation=cv2.INTER_LINEAR)
+        # cv2.imwrite(filename=image_snapshot_gradient, img=img_gradient_mask)
+        #
+        # img_residual = (img_2 - img_1) * 3.5
+        # image_residual_path = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}_residual.png")
+        # img_residual = cv2.resize(img_residual, (640, 640), interpolation=cv2.INTER_LINEAR)
+        # cv2.imwrite(filename=image_residual_path, img=img_residual)

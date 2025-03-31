@@ -73,17 +73,20 @@ def main(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    path_name = "25Mar16_17h23m36s"
-    parser.add_argument("--model_params_path", type=str, default=f"/workspace/code/watermark/bagon/data/result/{path_name}/model/best/best_model.pth")
+    # path_name = "25Mar16_17h23m36s"
+    path_name = "25Mar5_15h06m25s"
+    parser.add_argument("--model_params_path", type=str, default=f"/workspace/code/watermark/bagon/data/result/{path_name}/model/model.pth")
     # parser.add_argument("--data_dir", type=str, default="../../data/result/benchmark/image")
-    parser.add_argument("--data_dir", type=str, default="/root/.cache/huggingface/coco/coco/bagon_coco2017_val_1000")
+    # parser.add_argument("--data_dir", type=str, default="/root/.cache/huggingface/coco/coco/bagon_coco2017_val_1000")
+    parser.add_argument("--data_dir", type=str, default="/workspace/code/watermark/temp_image")
     parser.add_argument("--image_size", type=int, default=128)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_workers", type=int, default=56)
     parser.add_argument("--is_noise", type=bool, default=True)
     parser.add_argument("--is_jpg", type=bool, default=True)
     parser.add_argument("--clean_dir", type=bool, default=True)
-    parser.add_argument("--encode_output", type=str, default="../../data/result/benchmark/encoded")
+    # parser.add_argument("--encode_output", type=str, default="../../data/result/benchmark/encoded")
+    parser.add_argument("--encode_output", type=str, default="/workspace/code/watermark/temp_encoded_v0")
     parser.add_argument("--message_matrix_path", type=str, default="../utils/test_matrix.npy")
     parser.add_argument("--mapping_file_name", type=str, default="encoded_mapping.txt")
     parser.add_argument("--mode", type=str, default="ed", choices=['e', 'd', 'ed', 'i'], help="Choose a mode: 'e', 'd', or 'ed'")

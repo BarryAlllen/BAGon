@@ -31,6 +31,7 @@ def load_weights(model: nn.Module, weights_path: str, device):
             raise RuntimeError(f"Weight {new_k} is not on device {device}, but on {new_k.device} instead.")
         weights_dict[new_k] = v
     model.load_state_dict(weights_dict)
+    print(f"Loaded weights from {weights_path}")
     return model
 
 

@@ -6,6 +6,14 @@ scipy
 kornia
 pillow
 torchinfo
-numpy==1.23.5
+numpy
 loguru
 wandb
+
+ml-collections
+medpy
+SimpleITK
+h5py
+timm
+einops
+yacs
