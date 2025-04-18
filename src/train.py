@@ -1,3 +1,5 @@
+import os
+import sys
 
 import cv2
 import math
@@ -7,27 +9,39 @@ import torch
 import torch.nn as nn
 
 from tqdm import tqdm
+from loguru import logger
 
 from torch import optim
 from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader
 
-from src.networks.discriminator import Discriminator
+from src.networks.discriminator import Discriminator as Discriminator
 from src.networks.model import BAGon
-from src.utils import check_time
+from src.utils import check_time as ct, model_loader
 
 
 class Trainer:
     def __init__(
             self,
+            config: dict,
             epochs: int,
             train_dataloader: DataLoader,
             test_dataloader: DataLoader,
             seed: int,
+            result_path: str,
+            warmup_steps: int,
+            model_save_step: int,
+            epoch_show_step: int,
+            batch_show_step: int,
+            checkpoint_list: list,
+            is_wandb: bool,
             is_scheduler: bool = False,
             is_parallel: bool = False,
-            model_save_path = 'data/result/model/model.pth'
+            is_weights: bool = False,
+            weights_path: str = "",
+            weights_path_discriminator: str = "",
     ):
+        self.config = config
         self.epochs = epochs
 
         self.seed = seed
@@ -36,34 +50,51 @@ class Trainer:
         torch.cuda.manual_seed_all(self.seed)
 
         self.is_parallel = is_parallel
+        self.is_weights = is_weights
+        self.weights_path = weights_path
+        self.weights_path_discriminator = weights_path_discriminator
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
 
         self.is_scheduler = is_scheduler
-        self.warmup_steps = 3
+        self.warmup_steps = warmup_steps
 
         self.alpha = 3
         self.beta = 1
         self.gamma = 0.001
 
+        time = ct.get_main_time()
+
+        self.setup_result_path(time=time, path=result_path)
+        self.setup_logger(time=time, path=result_path)
         self.setup_model()
         self.setup_optimizer()
         self.setup_loss_function()
-        self.setup_tools()
+        self.is_wandb = is_wandb
+        self.setup_tools(time=time)
 
-        self.model_save_path = model_save_path
-
-        self.model_save_step = 10
-        self.print_for_epoch = 1
-        self.print_for_batch = 25
+        self.checkpoint_list = checkpoint_list
+        self.model_save_step = model_save_step
+        self.print_for_epoch = epoch_show_step
+        self.print_for_batch = batch_show_step
 
     def setup_model(self):
         self.bagon_net = BAGon().to(self.device)
+        if self.is_weights:
+            self.bagon_net = model_loader.get_model(weights_path=self.weights_path, device=self.device)
+        logger.info(f"{self.bagon_net.encoder.name}")
+        logger.info(f"{self.bagon_net.decoder.name}")
         if self.is_parallel:
             self.bagon_net = nn.DataParallel(self.bagon_net)
+
         self.discriminator = Discriminator(hidden_channels=64).to(self.device)
+        if self.is_weights:
+            self.discriminator = model_loader.get_discriminator(weights_path=self.weights_path_discriminator, device=self.device)
+        logger.info(f"{self.discriminator.name}")
+        if self.is_parallel:
+            self.discriminator = nn.DataParallel(self.discriminator)
 
     def lr_lambda(self, current_step):
         if current_step < self.warmup_steps:
@@ -72,30 +103,58 @@ class Trainer:
 
     def setup_optimizer(self):
         self.optimizer = optim.Adam(self.bagon_net.parameters())
+        self.optimizer_discriminator = optim.Adam(self.discriminator.parameters())
+
         if self.is_scheduler:
             self.scheduler = LambdaLR(self.optimizer, self.lr_lambda)
+            self.scheduler_discriminator = LambdaLR(self.optimizer_discriminator, self.lr_lambda)
         self.lr = self.optimizer.param_groups[0]['lr']
-
-        self.optimizer_discriminator = optim.Adam(self.discriminator.parameters())
+        self.lr_discriminator = self.optimizer_discriminator.param_groups[0]['lr']
 
     def setup_loss_function(self):
         self.bce_loss = nn.BCEWithLogitsLoss()
         self.mse_loss = nn.MSELoss()
 
-    def setup_tools(self):
-        self.wandb = wandb
-        self.wandb.init(
-            project="bagon",
-            name=check_time.get_time(),
-            config={
-                "learning_rate": self.lr,
-                "architecture": "U-Net",
-                "dataset": "COCO",
-                "epochs": self.epochs,
-            }
+    def setup_tools(self, time):
+        if self.is_wandb:
+            self.wandb = wandb
+            self.wandb.init(
+                project="bagon",
+                name=time,
+                config={
+                    "learning_rate": self.lr,
+                    "architecture": "U-Net",
+                    "dataset": "COCO",
+                    "epochs": self.epochs,
+                }
+            )
+
+    def setup_result_path(self, time: str, path: str):
+        # model
+        model_path = os.path.join(path, f"{time}/model")
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        self.model_save_path = model_path
+
+        # snapshot
+        self.snapshot_path = os.path.join(path, f"{time}/snapshot")
+        if not os.path.exists(self.snapshot_path):
+            os.makedirs(self.snapshot_path)
+
+    def setup_logger(self, time: str, path: str):
+        logger.remove()
+        log_file = "train.log"
+        log_path = os.path.join(path, f"{time}")
+        logger.add(
+            os.path.join(log_path, log_file),
+            format="<level>{message}</level>"
         )
+        logger.add(sys.stdout, format="<level>{message}</level>")
+        logger.info(self.config)
 
     def train(self):
+        start_time = ct.get_time()  # record start time
+        logger.info(f"Start time: {ct.get_time(format=ct.time_format1)}")
 
         train_loss = 0.0
         decoder_loss = 0.0
@@ -107,14 +166,16 @@ class Trainer:
         test_corrcet_best = 0.0
 
         for epoch in range(self.epochs):
-            loss_show  = 0.0
-            message_loss_show  = 0.0
-            mask_loss_show  = 0.0
-            generator_loss_show  = 0.0
-            discriminator_fake_loss_show  = 0.0
+            loss_show = 0.0
+            message_loss_show = 0.0
+            mask_loss_show = 0.0
+            generator_loss_show = 0.0
+            discriminator_fake_loss_show = 0.0
 
-            print(f"Epoch [{epoch+1}/{self.epochs}] Training begins, lr={self.lr}")
-            progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader), desc="Batch training")
+            logger.info(
+                f"Epoch [{epoch + 1}/{self.epochs}] Training begins, lr={self.lr:.10f}, lr_discriminator={self.lr_discriminator:.10f}")
+            progress_bar = tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader),
+                                desc="Batch training")
             for batch, (image, edge_mask, depth_mask, message) in progress_bar:
                 self.bagon_net.train()
                 self.discriminator.train()
@@ -162,21 +223,28 @@ class Trainer:
 
                 # guide to watermark embedding position
                 mask_loss = (
-                        self.mse_loss(image_encoded * depth_mask.float(), image * depth_mask.float()) * 0.75 +
-                        self.mse_loss(image_encoded * gradient_mask.float(), image * gradient_mask.float()) * 0.5 +
-                        self.mse_loss(image_encoded * edge_mask.float(), image * edge_mask.float()) * 2
+                        self.mse_loss(image_encoded * depth_mask.float(), image * depth_mask.float()) * 2 +
+                        self.mse_loss(image_encoded * edge_mask.float(), image * edge_mask.float()) * 0.75 +
+                        self.mse_loss(image_encoded * gradient_mask.float(), image * gradient_mask.float()) * 0.25
                 )
 
+                # loss = (
+                #         message_loss * self.alpha +
+                #         mask_loss * self.beta +
+                #         generator_loss * self.gamma
+                # )
+
                 loss = (
-                        message_loss * self.alpha +
-                        mask_loss * self.beta +
-                        generator_loss * self.gamma
+                        message_loss * 3 +
+                        generator_loss * 1
                 )
+
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
                 self.lr = self.optimizer.param_groups[0]['lr']
+                self.lr_discriminator = self.optimizer_discriminator.param_groups[0]['lr']
 
                 loss_show += loss.item()
                 message_loss_show += message_loss.item()
@@ -185,21 +253,12 @@ class Trainer:
                 discriminator_fake_loss_show += discriminator_fake_loss.item()
 
                 if (batch + 1) % self.print_for_batch == 0:
-                    print(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
-                          f"Loss: {loss_show / self.print_for_batch}, "
-                          f"Message Loss: {message_loss_show / self.print_for_batch}, "
-                          f"Mask Loss: {mask_loss_show / self.print_for_batch}, "
-                          f"Generator Loss: {generator_loss_show / self.print_for_batch}, "
-                          f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch}")
-
-                    # self.wandb.log({
-                    #     "Loss": loss_show / self.print_for_batch,
-                    #     "Message Loss": message_loss_show / self.print_for_batch,
-                    #     "Mask Loss": mask_loss_show / self.print_for_batch,
-                    #     "Generator Loss": generator_loss_show / self.print_for_batch,
-                    #     "Discriminator Fake Loss": discriminator_fake_loss_show / self.print_for_batch,
-                    #     "lr": self.lr
-                    # },step=batch)
+                    logger.info(f"\nEpoch [{epoch + 1}/{self.epochs}], Batch [{batch + 1}/{len(self.train_dataloader)}], "
+                          f"Loss: {loss_show / self.print_for_batch:.4f}, "
+                          f"Message Loss: {message_loss_show / self.print_for_batch:.4f}, "
+                          f"Mask Loss: {mask_loss_show / self.print_for_batch:.4f}, "
+                          f"Generator Loss: {generator_loss_show / self.print_for_batch:.4f}, "
+                          f"Discriminator Fake Loss: {discriminator_fake_loss_show / self.print_for_batch:.4f}")
 
                     loss_show = 0.0
                     message_loss_show = 0.0
@@ -207,22 +266,23 @@ class Trainer:
                     generator_loss_show = 0.0
                     discriminator_fake_loss_show = 0.0
 
-                    self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch)
+                    self.save_training_image(image, image_encoded, image_encoded_noised, gradient_mask, edge_mask,
+                                             depth_mask, epoch, batch)
 
                 train_loss += loss.item()
                 decoder_loss += message_loss.item()
                 guide_mask_loss += mask_loss.item()
                 gen_loss += generator_loss.item()
                 dis_loss += discriminator_fake_loss.item()
-
-            self.wandb.log({
-                "Train Loss": train_loss / len(self.train_dataloader),
-                "Decoder Loss": decoder_loss / len(self.train_dataloader),
-                "Guide Mask Loss": guide_mask_loss / len(self.train_dataloader),
-                "Generator Loss": gen_loss / len(self.train_dataloader),
-                "Discriminator Fake Loss": dis_loss / len(self.train_dataloader),
-                "lr": self.lr
-            })
+            if self.is_wandb:
+                self.wandb.log({
+                    "Train Loss": train_loss / len(self.train_dataloader),
+                    "Decoder Loss": decoder_loss / len(self.train_dataloader),
+                    "Guide Mask Loss": guide_mask_loss / len(self.train_dataloader),
+                    "Generator Loss": gen_loss / len(self.train_dataloader),
+                    "Discriminator Fake Loss": dis_loss / len(self.train_dataloader),
+                    "lr": self.lr
+                })
 
             train_loss = 0.0
             decoder_loss = 0.0
@@ -232,11 +292,12 @@ class Trainer:
 
             if self.is_scheduler:
                 self.scheduler.step()
+                self.scheduler_discriminator.step()
 
             wrong_correct_bit = 0.0
             correct_bit_total = 0.0
 
-            print('Testing begins...')
+            logger.info('Testing begins...')
             self.bagon_net.eval()
             with torch.inference_mode():
                 for batch, (image_test, message_test) in enumerate(self.test_dataloader):
@@ -250,22 +311,71 @@ class Trainer:
                     correct_bit_total += message_test.shape[0] * message_test.shape[1]
 
             test_correct = (1 - wrong_correct_bit / correct_bit_total) * 100.0
-            print(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}%\n")
-            self.wandb.log({
-                "Correct Rate": test_correct,
-            })
+            logger.info(f"Epoch [{epoch + 1}/{self.epochs}] Correct Rate: {test_correct:.2f}% | {ct.get_time(format=ct.time_format3)}\n")
+            if self.is_wandb:
+                self.wandb.log({
+                    "Correct Rate": test_correct,
+                })
 
+            # save best model weights
+            model_name = "model.pth" # model base name
+            discriminator_name = "discriminator.pth" # discriminator base name
             if test_correct >= test_corrcet_best:
                 test_corrcet_best = test_correct
 
+                best_path = os.path.join(self.model_save_path, "best")
+                if not os.path.exists(best_path):
+                    os.mkdir(best_path)
+
+                # save best encoder & decoder
+                best_model_save_path = os.path.join(best_path, f"best_{model_name}")
+                torch.save(self.bagon_net.state_dict(), best_model_save_path)
+
+                # save best discriminator
+                best_discriminator_save_path = os.path.join(best_path, f"best_{discriminator_name}")
+                torch.save(self.discriminator.state_dict(), best_discriminator_save_path)
+
+                logger.info(f"Best model saved at {best_path}\n")
+
             test_corrcet_total += test_correct
 
+            # save model weights
             if (epoch + 1) % self.model_save_step == 0:
-                torch.save(self.bagon_net.state_dict(), self.model_save_path)
+                # save encoder & decoder
+                step_model_save_path = os.path.join(self.model_save_path, model_name)
+                torch.save(self.bagon_net.state_dict(), step_model_save_path)
 
-        self.wandb.finish()
+                # save discriminator
+                step_discriminator_save_path = os.path.join(self.model_save_path, f"{discriminator_name}")
+                torch.save(self.discriminator.state_dict(), step_discriminator_save_path)
 
-    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask, epoch, batch):
+                logger.info(f"Model saved at {self.model_save_path}, epoch {epoch + 1}\n")
+
+            # save checkpoint weights
+            if (epoch + 1) in self.checkpoint_list:
+                checkpoint_path = os.path.join(self.model_save_path, f"checkpoint_{(epoch + 1)}")
+                if not os.path.exists(checkpoint_path):
+                    os.mkdir(checkpoint_path)
+
+                # save encoder & decoder
+                checkpoint_model_save_path = os.path.join(checkpoint_path, f"{model_name}")
+                torch.save(self.bagon_net.state_dict(), checkpoint_model_save_path)
+
+                # save discriminator
+                checkpoint_discriminator_save_path = os.path.join(checkpoint_path, f"{discriminator_name}")
+                torch.save(self.discriminator.state_dict(), checkpoint_discriminator_save_path)
+
+
+        end_time = ct.get_time()  # record end time
+        logger.info(f"End time: {ct.get_time(format=ct.time_format1)}")
+        time_diff = ct.cal_time_diff(start_time, end_time)
+        logger.info(f"Training finished, total time: {time_diff}")
+
+        if self.is_wandb:
+            self.wandb.finish()
+
+    def save_training_image(self, image, image_encoded, image_encoded_noised, gradient_mask, edge_mask, depth_mask,
+                            epoch, batch):
         t = np.random.randint(image.shape[0])
         img_1 = (image[t, :, :, :].detach().to('cpu').numpy() + 1) / 2 * 255
         img_1 = np.transpose(img_1, (1, 2, 0))
@@ -298,5 +408,14 @@ class Trainer:
         result[:, shape * 5:shape * 6, :] = img_depth_mask
         result[:, shape * 6:shape * 7, :] = img_residual
 
-        cv2.imwrite(f'data/result/epoch_batch_image/epoch{epoch+1}-batch{batch+1}.png', result)
+        image_snapshot = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}.png")
+        cv2.imwrite(filename=image_snapshot, img=result)
 
+        # image_snapshot_gradient = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}_gradient.png")
+        # img_gradient_mask = cv2.resize(img_gradient_mask, (640, 640), interpolation=cv2.INTER_LINEAR)
+        # cv2.imwrite(filename=image_snapshot_gradient, img=img_gradient_mask)
+        #
+        # img_residual = (img_2 - img_1) * 3.5
+        # image_residual_path = os.path.join(self.snapshot_path, f"e{epoch + 1}-b{batch + 1}_residual.png")
+        # img_residual = cv2.resize(img_residual, (640, 640), interpolation=cv2.INTER_LINEAR)
+        # cv2.imwrite(filename=image_residual_path, img=img_residual)

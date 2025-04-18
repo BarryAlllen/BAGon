@@ -1,4 +1,3 @@
-
 import math
 import kornia
 import random
@@ -128,7 +127,7 @@ def rotate(image, device, d=8):
     return data_warp
 
 
-def perspective(image, device, d=8):
+def perspective(image, device, d=18):
     # the source points are the region to crop corners
     c = image.shape[0]
     h = image.shape[2]
@@ -233,13 +232,14 @@ class ScreenShootingNoiseLayer(nn.Module):
         self.name = f"Model: {self.__class__.__name__}"
 
     def forward(self, embed_image):
+
         device = embed_image.device
 
         # jpg compression
         embed_image = jpg_compress(embed_image, device)
 
         # perspective transform
-        noised_image = perspective(embed_image, device, 2)
+        noised_image = perspective(embed_image, device, 75)
 
         # Light Distortion
         c = np.random.randint(0, 2)
@@ -249,19 +249,71 @@ class ScreenShootingNoiseLayer(nn.Module):
         Z = Moire_Distortion(embed_image) * 2 - 1
         Li = L.copy()
         Mo = Z.copy()
-        noised_image = noised_image * torch.from_numpy(Li).to(device) * 0.85 + torch.from_numpy(Mo).to(device) * 0.15
+        noised_image = noised_image * torch.from_numpy(Li).to(device) * 1 + torch.from_numpy(Mo).to(device) * 0.15
 
         # Gaussian noise
-        noised_image = noised_image + 0.001 ** 0.5 * torch.randn(noised_image.size()).to(device)
+        noised_image = noised_image + 0.005 ** 0.5 * torch.randn(noised_image.size()).to(device)
 
         return noised_image.to(torch.float)
 
 
-class NoneNoiseLayer(nn.Module):
-    def __init__(self):
+class JPEGNoise(nn.Module):
+    def __int__(self):
         super().__init__()
         self.name = f"Model: {self.__class__.__name__}"
 
-    def forward(self, embed_image):
-        output = embed_image
-        return output
+    def forward(self, image):
+        device = image.device
+        noised_image = jpg_compress(image, device)
+        return noised_image
+
+class PerspectiveNoise(nn.Module):
+    def __int__(self):
+        super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
+
+    def forward(self, image):
+        device = image.device
+        noised_image = perspective(image, device, 75)
+        return noised_image
+
+class LightNoise(nn.Module):
+    def __int__(self):
+        super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
+
+    def forward(self, image):
+        device = image.device
+        c = np.random.randint(0, 2)
+        L = Light_Distortion(c, image)
+        Li = L.copy()
+        noised_image = image * torch.from_numpy(Li).to(device) * 1
+        return noised_image
+
+
+class MoireNoise(nn.Module):
+    def __int__(self):
+        super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
+
+    def forward(self, image):
+        device = image.device
+        Z = Moire_Distortion(image) * 2 - 1
+        Mo = Z.copy()
+        noised_image = image * 0.85 + torch.from_numpy(Mo).to(device) * 0.15
+        return noised_image
+
+
+class GaussianNoise(nn.Module):
+    def __int__(self):
+        super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
+
+    def forward(self, image):
+        device = image.device
+        noised_image = image + 0.005 ** 0.5 * torch.randn(image.size()).to(device)
+        return noised_image
+
+seed = 7777
+np.random.seed(seed)  # 设置 Python 随机种子
+random.seed(seed)  # 设置 Python 随机种子

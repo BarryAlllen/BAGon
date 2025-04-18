@@ -1,12 +1,15 @@
 
 import torch.nn as nn
 
+from src.networks.attention import ConvolutionalBlockAttentionModule
 from src.networks.common import ConvBatchNormReluBlock
 
 
 class Discriminator(nn.Module):
     def __init__(self, in_channels=3, hidden_channels=64):
         super().__init__()
+        self.name = f"Model: {self.__class__.__name__}"
+
         self.layers = nn.Sequential(
             ConvBatchNormReluBlock(in_channels=in_channels, out_channels=hidden_channels),
             ConvBatchNormReluBlock(in_channels=hidden_channels, out_channels=hidden_channels),
