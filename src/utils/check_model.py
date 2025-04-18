@@ -48,9 +48,9 @@ def noise_info(input_size):
 
 def main():
     # encoder_info(encoder_input_size1)
-    # decoder_info(decoder_input_size1)
+    decoder_info(decoder_input_size1)
     # disciminator_info(discriminator_input_size)
-    noise_info(noise_input_size)
+    # noise_info(noise_input_size)
 
 
 if __name__ == '__main__':
